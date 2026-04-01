@@ -1,0 +1,4 @@
+sample_id,fastq
+HG00514,/home/alumno27/tfm/simulacion/input_data/HG00514.fastq.gz
+HG00733,/home/alumno27/tfm/simulacion/input_data/HG00733.fastq.gz
+NA19240,/home/alumno27/tfm/simulacion/input_data/NA19240.fastq.gz

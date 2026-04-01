@@ -1,0 +1,16 @@
+work/ 
+results_test/ 
+results/ 
+.nextflow/ 
+.nextflow.log* 
+logs/ 
+*.bam 
+*.bai 
+*.fastq 
+*.fastq.gz 
+*.fa 
+*.fna 
+*.fasta 
+*.tar.gz 
+*.rds
+*.RDS
