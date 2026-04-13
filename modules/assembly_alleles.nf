@@ -12,11 +12,19 @@ process ASSEMBLY_ALLELES {
 
     script:
     """
-    python3 ${projectDir}/bin/getGoodAlts.py \
-        ${vcf} \
-        ${bam} \
-        ${sample_id}.${caller}.polished.vcf \
-        ${task.cpus}
+    N_VARS=\$(zcat ${vcf} | grep -v "^#" | wc -l)
+    echo "Variantes en ${vcf}: \$N_VARS"
+
+    if [ "\$N_VARS" -eq 0 ]; then
+        echo "AVISO: VCF vacío, generando salida vacía válida"
+        zcat ${vcf} | grep "^#" > ${sample_id}.${caller}.polished.vcf
+    else
+        python3 ${projectDir}/bin/getGoodAlts.py \
+            ${vcf} \
+            ${bam} \
+            ${sample_id}.${caller}.polished.vcf \
+            ${task.cpus}
+    fi
 
     bcftools sort ${sample_id}.${caller}.polished.vcf \
         -O z -o ${sample_id}.${caller}.polished.vcf.gz

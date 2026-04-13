@@ -3,78 +3,57 @@ library(magrittr)
 library(ggplot2)
 library(patchwork)
 library(stringi)
-# Enrichment:
-library(GO.db) # 3.17 - 3.16
-library(AnnotationHub) # 3.8 - 3.6
-library(org.Hs.eg.db) # 
-library(clusterProfiler) #
-library(topGO) #
-library(DOSE) #
+library(GO.db)
+library(AnnotationHub)
+library(org.Hs.eg.db)
+library(clusterProfiler)
+library(topGO)
+library(DOSE)
 
-if (F) {
-  # For debugging
-  saveRDS(snakemake, "~/path/snk4.rds")
-  q()
-  snakemake = readRDS("~/path/snk4.rds")
-}
+# === Argumentos de línea de comandos ===
+args = commandArgs(trailingOnly = TRUE)
+genesFile = args[1]
+p         = as.numeric(args[2])
+# =======================================
 
-genes = readRDS(snakemake@input[["dt"]])
-
+genes     = readRDS(genesFile)
 geneNames = genes$annot.symbol %>% unique()
-geneDt = bitr(geneNames, fromType = "SYMBOL",
-              toType = c("REFSEQ", "ENSEMBL", "ENTREZID"),
-              OrgDb = org.Hs.eg.db) %>% data.table()
-
-p = snakemake@params[["plimit"]] %>% as.numeric()
+geneDt    = bitr(geneNames, fromType = "SYMBOL",
+                 toType = c("REFSEQ", "ENSEMBL", "ENTREZID"),
+                 OrgDb = org.Hs.eg.db) %>% data.table()
 
 # GO enrichment
-
 for (x in c("MF", "BP", "CC")) {
   name = paste0("ego", x)
-  dtName = paste0(name, "Dt")
   assign(x = name,
          enrichGO(
-           gene = geneDt$ENSEMBL,
-           OrgDb = org.Hs.eg.db,
-           keyType = 'ENSEMBL',
-           ont = x,
+           gene          = geneDt$ENSEMBL,
+           OrgDb         = org.Hs.eg.db,
+           keyType       = 'ENSEMBL',
+           ont           = x,
            pAdjustMethod = "BH",
-           pvalueCutoff = p)
+           pvalueCutoff  = p)
   )
   object = get(name)
-  if (is.null(object)) {
-    saveRDS(get(name), snakemake@output[[name]])
-    next()
+  if (!is.null(object)) {
+    object = object %>% setReadable(OrgDb = org.Hs.eg.db)
+    assign(name, object)
   }
-  object = object %>% setReadable(OrgDb = org.Hs.eg.db)
-  saveRDS(get(name), snakemake@output[[name]])
+  saveRDS(get(name), paste0(name, ".rds"))
 }
 
-# KEGG
-# disabled because it wont work with the other bioconda packages
-
-# kegg = enrichKEGG(
-#   gene = geneDt$ENTREZID,
-#   organism = 'hsa',
-#   pvalueCutoff = p
-# )
-# saveRDS(kegg, snakemake@output[["kegg"]])
-
 # DO
-
-do <- enrichDO(gene          = geneDt$ENTREZID,
-               ont           = "DO",
-               pvalueCutoff  = p,
-               pAdjustMethod = "BH",
-               # universe      = names(geneList),
-               minGSSize     = 5,
-               maxGSSize     = 500,
-               readable      = T)
-saveRDS(do, snakemake@output[["do"]])
+do = enrichDO(gene          = geneDt$ENTREZID,
+              ont           = "DO",
+              pvalueCutoff  = p,
+              pAdjustMethod = "BH",
+              minGSSize     = 5,
+              maxGSSize     = 500,
+              readable      = T)
+saveRDS(do, "do.rds")
 
 # NCG
-
 ncg = enrichNCG(geneDt$ENTREZID %>% unique(),
                 pvalueCutoff = p,
-                readable = T)
-saveRDS(ncg, snakemake@output[["ncg"]])
+                readable     = T)
+saveRDS(ncg, "ncg.rds")

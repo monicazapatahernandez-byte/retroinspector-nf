@@ -70,14 +70,20 @@ def isNumber(x):
     except:
         return False
 
-def main(snakemake):
-    svType = ""
-    if "svType" in snakemake.params.keys():
-        svType = snakemake.params["svType"]
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--svtype", default="")
+    parser.add_argument("coverage")
+    parser.add_argument("vcf")
+    parser.add_argument("output")
+    args = parser.parse_args()
+
+    svType = args.svtype
     print(svType)
-    coverages = readCoverage(snakemake.input.coverage)
-    with VariantFile(snakemake.input.vcf) as vcf, \
-            VariantFile(snakemake.output.vcf, 'w', header=vcf.header) as out:
+    coverages = readCoverage(args.coverage)
+    with VariantFile(args.vcf) as vcf, \
+            VariantFile(args.output, 'w', header=vcf.header) as out:
         samples = list(vcf.header.samples)
         for record in vcf.fetch():
             if svType and svType != record.info["SVTYPE"]:
@@ -85,9 +91,9 @@ def main(snakemake):
                 continue
             try:
                 support = [record.samples[x]["DR"][1]
-                        for x in samples]  # second value, support for SV
+                        for x in samples]
                 genotypes = [genotype(float(sup), coverages[record.id]) if isNumber(sup) else ((None, None), None)
-                            for sup in support ]
+                            for sup in support]
                 for i, (geno, qual) in enumerate(genotypes):
                     record.samples[i]["GT"] = geno
                     record.samples[i]["QV"] = str(qual)
@@ -96,6 +102,5 @@ def main(snakemake):
                 sys.exit(f"Error while genotyping\n{record}")
             out.write(record)
 
-
 if __name__ == "__main__":
-    main(snakemake)
+    main()

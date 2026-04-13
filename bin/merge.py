@@ -197,6 +197,8 @@ for i in range(len(sampleList)):
     #     sampleParams[sample]["method"] = signature
     if method := re.findall(r"##(?:METHOD|source)=(.+)", str(vcf.header), re.MULTILINE):
         sampleParams[sample]["method"] = method[0]
+    if exampleRecord == "" or not hasattr(exampleRecord, 'info'):
+        continue
     if "RE" in exampleRecord.info.keys():
         sampleParams[sample]["supportKey"] = "RE"
     if "PE" in exampleRecord.info.keys():

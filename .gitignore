@@ -14,3 +14,7 @@ logs/
 *.tar.gz 
 *.rds
 *.RDS
+results_HG00514/
+input_data/
+data/repeatsReferenceTE.bed.gz
+data/repeatsReferenceTE.bed.gz.csi

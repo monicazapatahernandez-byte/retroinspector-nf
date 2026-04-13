@@ -1,6 +1,5 @@
 process GET_REFERENCE_REPEATS {
     conda "${projectDir}/env.yaml"
-
     publishDir "${params.outdir}/data", mode: 'copy'
 
     output:
@@ -8,16 +7,8 @@ process GET_REFERENCE_REPEATS {
 
     script:
     """
-    wget -O hg38.fa.out.gz \
-        http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.out.gz
-
-    zcat hg38.fa.out.gz | tail -n +4 | \
-    grep -E "(S|L)INE|Retroposon|LTR|DNA" | \
-    awk -v'OFS=\t' '{print \$5,\$6,\$7,\$9,\$10,\$11}' \
-        > repeatsReferenceTE.bed
-
-    bgzip -k repeatsReferenceTE.bed
-    tabix -p bed --csi repeatsReferenceTE.bed.gz
+    cp ${projectDir}/data/repeatsReferenceTE.bed.gz repeatsReferenceTE.bed.gz
+    cp ${projectDir}/data/repeatsReferenceTE.bed.gz.csi repeatsReferenceTE.bed.gz.csi
     """
 }
 

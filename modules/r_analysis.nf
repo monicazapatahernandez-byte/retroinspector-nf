@@ -16,7 +16,7 @@ process R_PREPARATORY {
 
     script:
     """
-    Rscript ${projectDir}/scripts/analysisPreparatory.R \
+    Rscript ${projectDir}/bin/analysisPreparatory.R \
         ${rm_bed} \
         ${del_vcf} \
         ${params.min_read_support} \
@@ -40,7 +40,7 @@ process R_GENOTYPING {
 
     script:
     """
-    Rscript ${projectDir}/scripts/analysisGenotyping.R \
+    Rscript ${projectDir}/bin/analysisGenotyping.R \
         ${insertions_table} \
         ${annotated_insertions} \
         ${params.all_prefix}
@@ -64,7 +64,7 @@ process R_ENRICHMENT {
 
     script:
     """
-    Rscript ${projectDir}/scripts/enrichment.R \
+    Rscript ${projectDir}/bin/enrichment.R \
         ${genes} \
         ${params.enrichment_pval}
     """
@@ -92,11 +92,22 @@ process R_REPORT {
 
     script:
     """
-    Rscript -e "rmarkdown::render('${projectDir}/scripts/report.Rmd',
+    Rscript -e "rmarkdown::render('${projectDir}/bin/report.Rmd',
         output_file='report.${params.all_prefix}.html',
-        output_dir=getwd())"
+        output_dir=getwd(),
+        params=list(
+            insertions_table='${insertions_table}',
+            all_ins='${all_ins}',
+            annotated_insertions='${annotated_insertions}',
+            me_deletions='${me_deletions}',
+            egoMF='${egoMF}',
+            egoBP='${egoBP}',
+            egoCC='${egoCC}',
+            do_rds='${do_rds}',
+            ncg='${ncg}',
+            plimit=${params.enrichment_pval}
+        ))"
     """
-}
 
 process R_COMPARE {
     conda "${projectDir}/r.yaml"
@@ -113,9 +124,16 @@ process R_COMPARE {
 
     script:
     """
-    Rscript -e "rmarkdown::render('${projectDir}/scripts/comparison.Rmd',
+    Rscript -e "rmarkdown::render('${projectDir}/bin/comparison.Rmd',
         output_file='${sample1}_vs_${sample2}.html',
-        output_dir=getwd())"
+        output_dir=getwd(),
+        params=list(
+            insertions_table='${insertions_table}',
+            annotated_insertions='${annotated_insertions}',
+            sample1='${sample1}',
+            sample2='${sample2}',
+            samples='${params.all_prefix}'
+        ))"
     """
 }
 
