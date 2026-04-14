@@ -115,7 +115,9 @@ print(vcfs)
 
 vcfs = [VariantFile(vcf) for vcf in vcfs]
 
-consumed = set()
+consumed = set()  # For SVs that have been matched
+# emptyGeno = "./.:NaN:0:0,0:--:NaN:NaN:NaN:NAN:NAN:NAN" # Not found in sample
+# formatStr = "GT:PSV:LN:DR:ST:QV:TY:ID:RAL:AAL:CO"
 
 out = VariantFile(outFile, "w")
 for i in sampleList:
@@ -162,7 +164,7 @@ out.header.add_meta("FORMAT", items=[("ID", "DR"), ("Number", 2), ("Type", "Inte
 out.header.add_meta("FORMAT", items=[(
     "ID", "ST"), ("Number", 1), ("Type", "String"), ("Description", "Strand of SVs")])
 out.header.add_meta("FORMAT", items=[("ID", "QV"), ("Number", 1), ("Type", "String"), (
-    "Description", "Quality values: if not defined a . otherwise the r")])
+    "Description", "Quality values: if not defined a . otherwise the r")]) # string to keep compatibility with SURVIVOR's output
 out.header.add_meta("FORMAT", items=[
                     ("ID", "TY"), ("Number", 1), ("Type", "String"), ("Description", "Types")])
 out.header.add_meta("FORMAT", items=[(
@@ -186,15 +188,16 @@ for i in range(len(sampleList)):
     vcf = vcfs[i]
     sample = sampleList[i]
 
-    exampleRecord = None  # Will be a VariantRecord instance
+    exampleRecord = ""  # Will be a VariantRecord instance
 
     for i in vcf:
         exampleRecord = i
         break  # We take the first one as an example
-
+    # if f"##METHOD={signature}" in str(vcf.header):
+    #     sampleParams[sample]["method"] = signature
     if method := re.findall(r"##(?:METHOD|source)=(.+)", str(vcf.header), re.MULTILINE):
         sampleParams[sample]["method"] = method[0]
-    if exampleRecord is None:
+    if exampleRecord == "" or not hasattr(exampleRecord, 'info'):
         continue
     if "RE" in exampleRecord.info.keys():
         sampleParams[sample]["supportKey"] = "RE"
@@ -219,12 +222,15 @@ emptyGenotype = {
 }
 genotypeFields = "GT:PSV:LN:DR:ST:QV:TY:ID:RAL:AAL:CO:SC".split(":")
 
+# poscheck = 21871943
 n = 0
 for i in range(len(vcfs) - 1):
 
     vcf = vcfs[i]
     sample = sampleList[i]
+    # others = vcfs[i + 1:]
 
+    # print(sample)
     sampleN = len(list(vcf.header.samples))
     hasGT = "GT" in vcf.header.formats.keys()
     hasQV = "QV" in vcf.header.formats.keys()
@@ -232,6 +238,8 @@ for i in range(len(vcfs) - 1):
     for var in vcf.fetch():
 
         uid = f"{sample}_{var.id}"
+        # if poscheck-10 <= var.pos <= poscheck+10:
+        #         print(var.chrom, var.pos)
 
         if var.info["SVTYPE"] != "INS":
             continue
@@ -249,6 +257,7 @@ for i in range(len(vcfs) - 1):
             ])
         elif sampleParams[sample]["supportKey"]:
             readSupport = var.info[sampleParams[sample]["supportKey"]]
+        # See output header for description.
 
         altField = var.alts[0].replace(":", "_") if var.alts else var.alts
         if not altField:
@@ -293,20 +302,22 @@ for i in range(len(vcfs) - 1):
             ]),
             "samples": {
                 sample: varFormat
-            }
+            }  # length of samples
         }
 
         svLen = getInfoValue(var)
         svLenToCompare = ceil(svLen * 0.15)
         svScoreToCompare = 60
 
-        for sampleToCompare in sampleList[0:i]:
+        for sampleToCompare in sampleList[0:i]: # set previous samples to empty column
+            # if there was a match it would have been merged when processing that sample
+            # and this variant would have been ommitted due to being in consumed
             result["samples"][sampleToCompare] = emptyGenotype
 
         for _j, other in enumerate(vcfs[i+1:]):
             j = i + _j + 1
             sampleToCompare = sampleList[j]
-            candidates = []
+            candidates = []  # candidates are reset for every VCF
             for candidate in other.fetch(var.chrom, max(var.pos - distance, 0),
                                          var.pos + distance):
                 if candidate.pos not in range(max(var.pos - distance, 0),
@@ -323,14 +334,17 @@ for i in range(len(vcfs) - 1):
                     abs(svLen - getInfoValue(x, toInt=1)) <= svLenToCompare,
                     candidates)
             )
+            # if var.pos == poscheck:
+            #     print(var.chrom, var.pos)
+            #     print(f"# Initial candidates: {len(candidates)}")
             if not candidates:
                 result["samples"][sampleToCompare] = emptyGenotype
-                continue
+                continue  # To next VCF
             try:
                 candidates = sorted(
                     candidates,
                     key=lambda x: abs(
-                        getInfoValue(x, toInt=1) - var.info["SVLEN"]))
+                        getInfoValue(x, toInt=1) - var.info["SVLEN"]))  # !
             except:
                 print(var.info["SVLEN"])
                 sys.exit(
@@ -343,12 +357,19 @@ for i in range(len(vcfs) - 1):
                 } for x in candidates]
                 chosen = max(alns, key=lambda x: x["aln"].score)
                 cand = chosen["candidate"]
+                # if var.pos == poscheck:
+                #     print("chosen")
+                #     print(chosen)
+                # print(chosen['aln'].score)
                 if chosen["aln"].score < svScoreToCompare:
                     result["samples"][sampleToCompare] = emptyGenotype
-                    continue
+                    continue  # To next VCF
             else:
                 cand = candidates[0]
                 chosen = {"cand": cand, "aln": 0}
+            # if var.pos == poscheck:
+            #         print("we have chosen")
+            #         pp(chosen)
             uid2 = sampleToCompare + "_" + cand.id
             consumed.add(uid2)
             result["info"]["SUPP"] += 1
@@ -372,22 +393,35 @@ for i in range(len(vcfs) - 1):
             if singleSample:
                 gt, qv = getGtQv(cand, len(list(cand.samples)), "GT" in cand.header.formats.keys(), "QV" in cand.header.formats.keys())
             result["samples"][sampleToCompare] = {
-                "GT": gt,
-                "PSV": cand.info['SUPP_VEC']
+                "GT":
+                gt,
+                "PSV":
+                cand.info['SUPP_VEC']
                 if "SUPP_VEC" in cand.info.keys() else "NAN",
-                "LN": getInfoValue(cand),
+                "LN":
+                getInfoValue(cand),
                 "DR": (None, readSupport),
-                "ST": "NAN",
-                "QV": str(qv),
-                "TY": "NaN",
-                "ID": cand.id,
-                "RAL": cand.ref,
-                "AAL": cand.alts[0].replace(":", "_"),
-                "CO": f"{cand.chrom}_{cand.pos}_{cand.stop}",
-                "SC": chosen["aln"].score
+                "ST":
+                "NAN",
+                "QV":
+                str(qv),
+                "TY":
+                "NaN",
+                "ID":
+                cand.id,
+                "RAL":
+                cand.ref,
+                "AAL":
+                cand.alts[0].replace(":", "_"),
+                "CO":
+                f"{cand.chrom}_{cand.pos}_{cand.stop}",
+                "SC":
+                chosen["aln"].score
                 if isinstance(chosen["aln"], tuple) else chosen["aln"],
-                'start': cand.start,
-                'end': cand.stop,
+                'start':
+                cand.start,
+                'end':
+                cand.stop,
             }
 
         startToUse = median([
@@ -414,6 +448,8 @@ for i in range(len(vcfs) - 1):
             filter="PASS",
             id=str(n),
         )
+        # if var.pos == 172571922:
+        #     pp(result)
         n += 1
         for field, value in result["info"].items():
             try:
@@ -439,8 +475,9 @@ print("Finished all but last VCF")
 # last vcf
 sample = sampleList[-1]
 print("last sample:", sample)
-for var in vcfs[-1].fetch():
+for var in vcfs[-1].fetch():  # Add the unmatched vars for the last one
     i = len(vcfs)
+    # For index in lists, etc.
     uid = f"{sample}_{var.id}"
 
     sampleN = len(list(vcf.header.samples))
@@ -494,10 +531,11 @@ for var in vcfs[-1].fetch():
             ("SVTYPE", var.info["SVTYPE"]),
             ("SVMETHOD", "merge.py"),
         ]),
-        "samples": {sample: varFormat}
+        "samples": {sample: varFormat}  # length of samples
     }
 
-    for j in range(len(vcfs) - 1):
+    for j in range(len(vcfs) - 1):  # other samples
+        # These variants have already been checked so we only need to add the empty genotypes
         sampleToCompare = sampleList[j]
         result["samples"][sampleToCompare] = emptyGenotype
     try:

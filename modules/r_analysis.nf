@@ -108,7 +108,7 @@ process R_REPORT {
             plimit=${params.enrichment_pval}
         ))"
     """
-
+}
 process R_COMPARE {
     conda "${projectDir}/r.yaml"
 

@@ -57,6 +57,7 @@ cd $PIPE_DIR
     --outdir results_HG00514 \
     --threads 32 \
     -profile dayhoff \
+    -work-dir work_HG00514 \
     -resume
 
 echo "=== FIN: $(date) ==="
