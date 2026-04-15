@@ -15,9 +15,6 @@ BASE_URL=ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_disco
 echo "=== INICIO: $(date) ==="
 du -sh ~
 
-# ============================================================
-# Función para procesar una muestra
-# ============================================================
 procesar_muestra() {
     local SAMPLE=$1
     local TARFILE="${SAMPLE}.ONT.rebasecalled.fastq.tar.gz"
@@ -30,51 +27,48 @@ procesar_muestra() {
     if [ -f "$DATA_DIR/$FASTQFILE" ]; then
         echo "=== [$SAMPLE] $FASTQFILE ya existe, saltando descarga ==="
     else
-        rm -f $DATA_DIR/$TARFILE
+        rm -f "$DATA_DIR/$TARFILE"
         echo "=== [$SAMPLE] Descargando ==="
-        cd $DATA_DIR
-        wget -c ${BASE_URL}/${TARFILE}
+        cd "$DATA_DIR"
+        wget -c "${BASE_URL}/${TARFILE}"
 
-        echo "=== [$SAMPLE] Verificando integridad ==="
-        if ! gzip -t $TARFILE 2>/dev/null; then
+        echo "=== [$SAMPLE] Verificando integridad del tar ==="
+        if ! tar -tzf "$TARFILE" > /dev/null 2>&1; then
             echo "ERROR [$SAMPLE]: tar.gz corrupto"
             exit 1
         fi
 
         echo "=== [$SAMPLE] Extrayendo ==="
-        tar -xzf $TARFILE
-        find projects/ -name "*.fastq.gz" | sort | xargs zcat | gzip > $FASTQFILE
+        tar -xzf "$TARFILE"
+        find projects/ -name "*.fastq.gz" | sort | xargs zcat | gzip > "$FASTQFILE"
         rm -rf projects/
-        rm -f $TARFILE
+        rm -f "$TARFILE"
 
         echo "=== [$SAMPLE] Verificando FASTQ ==="
-        N_READS=$(zcat $FASTQFILE | head -400 | grep "^@" | wc -l)
-        echo "Reads en primeras 400 líneas: $N_READS"
-        if [ "$N_READS" -eq 0 ]; then
-            echo "ERROR [$SAMPLE]: FASTQ vacío o corrupto, abortando"
+        if ! gzip -t "$FASTQFILE" 2>&1; then
+            echo "ERROR [$SAMPLE]: FASTQ corrupto tras extracción"
+            exit 1
+        fi
+        N_READS=$(zcat "$FASTQFILE" | head -4000 | awk 'NR%4==1 && /^@/{count++} END{print count}')
+        echo "Reads en primeras 4000 líneas: $N_READS"
+        if [ "$N_READS" -lt 10 ]; then
+            echo "ERROR [$SAMPLE]: FASTQ sospechoso (menos de 10 reads en 4000 líneas)"
             exit 1
         fi
     fi
 
-    echo "Tamaño FASTQ: $(du -sh $DATA_DIR/$FASTQFILE | cut -f1)"
+    echo "Tamaño FASTQ: $(du -sh "$DATA_DIR/$FASTQFILE" | cut -f1)"
     echo "=== [$SAMPLE] FASTQ listo ==="
     du -sh ~
 }
 
-# ============================================================
-# Descargar y preparar las 3 muestras
-# ============================================================
 procesar_muestra HG00514
 procesar_muestra HG00733
 procesar_muestra NA19240
 
-# ============================================================
-# Lanzar Nextflow con las 3 muestras
-# ============================================================
 echo ""
 echo "=== Lanzando Nextflow con 3 muestras: $(date) ==="
-cd $PIPE_DIR
-
+cd "$PIPE_DIR"
 /home/alumno27/miniconda3/envs/nf-core/bin/nextflow run main.nf \
     --input test_data/samplesheet.csv \
     --reference /home/software/nanopore/hg38.fa \
