@@ -8,8 +8,11 @@
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /home/alumno27/miniconda3/envs/nf-core
 
-DATA_DIR=~/tfm/retroinspector-nf/input_data
-PIPE_DIR=~/tfm/retroinspector-nf
+export NXF_CONDA_EXE=/home/alumno27/micromamba_bin/bin/micromamba
+export CONDA_PKGS_DIRS=$HOME/.conda/pkgs
+
+DATA_DIR=/home/alumno27/tfm/retroinspector-nf/input_data
+PIPE_DIR=/home/alumno27/tfm/retroinspector-nf
 BASE_URL=ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20181210_ONT_rebasecalled
 
 echo "=== INICIO: $(date) ==="
@@ -24,32 +27,47 @@ procesar_muestra() {
     echo "=== [$SAMPLE] INICIO: $(date) ==="
     du -sh ~
 
-    if [ -f "$DATA_DIR/$FASTQFILE" ]; then
+    if [ -f "${DATA_DIR}/${FASTQFILE}" ]; then
         echo "=== [$SAMPLE] $FASTQFILE ya existe, saltando descarga ==="
     else
-        rm -f "$DATA_DIR/$TARFILE"
+        rm -f "${DATA_DIR}/${TARFILE}"
         echo "=== [$SAMPLE] Descargando ==="
-        cd "$DATA_DIR"
-        wget -c "${BASE_URL}/${TARFILE}"
+        wget -c "${BASE_URL}/${TARFILE}" -O "${DATA_DIR}/${TARFILE}"
 
         echo "=== [$SAMPLE] Verificando integridad del tar ==="
-        if ! tar -tzf "$TARFILE" > /dev/null 2>&1; then
+        if ! tar -tzf "${DATA_DIR}/${TARFILE}" > /dev/null 2>&1; then
             echo "ERROR [$SAMPLE]: tar.gz corrupto"
             exit 1
         fi
 
         echo "=== [$SAMPLE] Extrayendo ==="
-        tar -xzf "$TARFILE"
-        find projects/ -name "*.fastq.gz" | sort | xargs zcat | gzip > "$FASTQFILE"
-        rm -rf projects/
-        rm -f "$TARFILE"
+        tar -xzf "${DATA_DIR}/${TARFILE}" -C "${DATA_DIR}"
+
+        echo "=== [$SAMPLE] Buscando ficheros fastq ==="
+        FASTQ_FILES=$(find "${DATA_DIR}" -name "*.fastq.gz" ! -name "${FASTQFILE}" | sort)
+        if [ -z "$FASTQ_FILES" ]; then
+            FASTQ_FILES=$(find "${DATA_DIR}" -name "*.fastq" | sort)
+            if [ -z "$FASTQ_FILES" ]; then
+                echo "ERROR [$SAMPLE]: no se encontraron ficheros fastq tras extracción"
+                exit 1
+            fi
+            echo "Encontrados $(echo "$FASTQ_FILES" | wc -l) ficheros .fastq"
+            echo "$FASTQ_FILES" | xargs cat | gzip > "${DATA_DIR}/${FASTQFILE}"
+        else
+            echo "Encontrados $(echo "$FASTQ_FILES" | wc -l) ficheros .fastq.gz"
+            echo "$FASTQ_FILES" | xargs zcat | gzip > "${DATA_DIR}/${FASTQFILE}"
+        fi
+
+        # Limpiar carpetas extraídas
+        find "${DATA_DIR}" -mindepth 1 -maxdepth 1 -type d | xargs rm -rf
+        rm -f "${DATA_DIR}/${TARFILE}"
 
         echo "=== [$SAMPLE] Verificando FASTQ ==="
-        if ! gzip -t "$FASTQFILE" 2>&1; then
+        if ! gzip -t "${DATA_DIR}/${FASTQFILE}" 2>&1; then
             echo "ERROR [$SAMPLE]: FASTQ corrupto tras extracción"
             exit 1
         fi
-        N_READS=$(zcat "$FASTQFILE" | head -4000 | awk 'NR%4==1 && /^@/{count++} END{print count}')
+        N_READS=$(zcat "${DATA_DIR}/${FASTQFILE}" | head -4000 | awk 'NR%4==1 && /^@/{count++} END{print count}')
         echo "Reads en primeras 4000 líneas: $N_READS"
         if [ "$N_READS" -lt 10 ]; then
             echo "ERROR [$SAMPLE]: FASTQ sospechoso (menos de 10 reads en 4000 líneas)"
@@ -57,7 +75,7 @@ procesar_muestra() {
         fi
     fi
 
-    echo "Tamaño FASTQ: $(du -sh "$DATA_DIR/$FASTQFILE" | cut -f1)"
+    echo "Tamaño FASTQ: $(du -sh ${DATA_DIR}/${FASTQFILE} | cut -f1)"
     echo "=== [$SAMPLE] FASTQ listo ==="
     du -sh ~
 }
