@@ -8,9 +8,6 @@
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /home/alumno27/miniconda3/envs/nf-core
 
-export NXF_CONDA_EXE=/home/alumno27/micromamba_bin/bin/micromamba
-export CONDA_PKGS_DIRS=$HOME/.conda/pkgs
-
 DATA_DIR=/home/alumno27/tfm/retroinspector-nf/input_data
 PIPE_DIR=/home/alumno27/tfm/retroinspector-nf
 BASE_URL=ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20181210_ONT_rebasecalled
