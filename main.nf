@@ -121,12 +121,14 @@ workflow {
     GET_DELETIONS(SURVIVOR_INTERPATIENT.out, GET_REFERENCE_REPEATS.out)
 
     // 9. Análisis R (solo en modo full)
+    ch_sample_ids = ch_samples.map { sid, fastq -> sid }.collect()
     if (params.mode == "full") {
-        R_PREPARATORY(REPEATMASKER.out, GET_DELETIONS.out)
+        R_PREPARATORY(REPEATMASKER.out, GET_DELETIONS.out, ch_sample_ids)
 
         R_GENOTYPING(
             R_PREPARATORY.out[2],  // insertionsTable
-            R_PREPARATORY.out[1]   // annotatedInsertionsMin3
+            R_PREPARATORY.out[1],   // annotatedInsertionsMin3
+            ch_sample_ids
         )
 
         R_ENRICHMENT(R_GENOTYPING.out[0])  // genes.rds

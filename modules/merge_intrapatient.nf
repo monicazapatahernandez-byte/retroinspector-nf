@@ -11,7 +11,7 @@ process MERGE_INTRAPATIENT {
     script:
     """
     python3 ${projectDir}/bin/merge.py \
-        -samples ${params.callers} \
+        -samples ${params.callers.tokenize(',').join(' ')}  \
         -vcf ${vcfs} \
         -o ${sample_id}.merged.both.ungenotyped.vcf \
         -d ${params.dist_intra}

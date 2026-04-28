@@ -10,11 +10,11 @@ library(parallel)
 print("Loaded libraries")
 
 # === Argumentos de línea de comandos ===
-args = commandArgs(trailingOnly = TRUE)
-insertionsTableFile      = args[1]
-annotatedInsertionsFile  = args[2]
-allPrefix                = args[3]
-samples                  = allPrefix
+args = commandArgs(trailingOnly = TRUE) 
+insertionsTableFile = args[1] 
+annotatedInsertionsFile = args[2]  
+allPrefix = args[3]
+samples   = args[4:length(args)]
 # =======================================
 
 chrs   = paste0("chr", c(1:22, "X", "Y"))

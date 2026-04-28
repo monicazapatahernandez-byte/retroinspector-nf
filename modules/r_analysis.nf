@@ -3,9 +3,10 @@ process R_PREPARATORY {
 
     publishDir "${params.outdir}/rds", mode: 'copy'
 
-    input:
-    path rm_bed
+    input: 
+    path rm_bed 
     tuple path(del_vcf), path(del_csi)
+    val sample_ids
 
     output:
     path "annotation.rds"
@@ -20,7 +21,8 @@ process R_PREPARATORY {
         ${rm_bed} \
         ${del_vcf} \
         ${params.min_read_support} \
-        ${params.all_prefix}
+        ${params.all_prefix} \
+        ${sample_ids.join(' ')}
     """
 }
 
@@ -32,6 +34,7 @@ process R_GENOTYPING {
     input:
     path insertions_table
     path annotated_insertions
+    val sample_ids
 
     output:
     path "genes.rds"
@@ -43,7 +46,8 @@ process R_GENOTYPING {
     Rscript ${projectDir}/bin/analysisGenotyping.R \
         ${insertions_table} \
         ${annotated_insertions} \
-        ${params.all_prefix}
+        ${params.all_prefix}  \
+        ${sample_ids.join(' ')}
     """
 }
 

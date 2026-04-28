@@ -1,4 +1,8 @@
-work/ 
+results_3muestras/
+work_3muestras/
+bin/analysisPreparatory-no-va.R
+bin/mergesinsnakemake-variassecsolo.py
+run_completo_3muestras_sin_comprobacion_bam.shwork/ 
 results_test/ 
 results/ 
 .nextflow/ 

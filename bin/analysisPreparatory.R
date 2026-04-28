@@ -13,7 +13,7 @@ repeatMaskerBedFile    = args[1]
 repeatMaskerVcfDelFile = args[2]
 minReadSupport         = as.integer(args[3])
 allPrefix              = args[4]
-samples                = allPrefix
+samples                = args[5:length(args)]
 # =======================================
 
 annotate = function(tableToAnnotate) {
@@ -179,11 +179,13 @@ meDeletionsMin3[, `:=`(
     svlen = INFO %>% sub(".*SVLEN=-([0-9]+).*", "\\1", x = .) %>% as.numeric()
   )]
 
-genoFields = meDeletionsMin3[1, 9] %>% unname() %>% stri_split_fixed(pattern = ":") %>% unlist()
+# Columnas de muestra: todo lo que viene después de FORMAT (columna 9)
+sample_cols = colnames(meDeletionsMin3)[10:ncol(meDeletionsMin3)]
+
+genoFields = meDeletionsMin3[1, FORMAT] %>% unname() %>% stri_split_fixed(pattern = ":") %>% unlist()
 genoFieldsOfInt = c("GT", "PSV")
 pos = which(genoFields %in% genoFieldsOfInt)
-for (col in meDeletionsMin3 %>% colnames() %>%
-     grep(pattern = "^Sample", x = ., ignore.case = T, value = T) ) {
+for (col in sample_cols) {
   meDeletionsMin3[, paste0(col, "_", genoFieldsOfInt) := tstrsplit(.SD[[col]], ":", fixed = T, keep = pos)]
 }
 meDeletionsMin3[, SUPP_VEC_min3 := apply(.SD, 2, `!=`, y = "NaN") %>% apply(., 2, as.integer) %>% apply(., 1, paste0, collapse = ""), .SDcols = grep(pattern = "_PSV$", colnames(meDeletionsMin3))]
@@ -214,7 +216,7 @@ meDeletionsMin3[
 meDeletionsMin3[, SUPP_VEC_geno := genotype %>% lapply(`>=`, y = 1)]
 meDeletionsMin3[, SUPP_geno := SUPP_VEC_geno %>% lapply(sum) %>% unlist()]
 meDeletionsMin3[, maf := genotype %>% lapply(function(x) sum(x) / (length(samples) * 2) ) %>% unlist()]
-meDeletionsMin3[, grep("^(Sample|FORMAT)", colnames(meDeletionsMin3), ignore.case = T) := NULL]
+meDeletionsMin3[, c("FORMAT", sample_cols) := NULL]
 meDeletionsMin3 = meDeletionsMin3[
   , .(
     seqnames = `#CHROM`,

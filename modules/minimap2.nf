@@ -1,16 +1,12 @@
 process MINIMAP2_ALIGN {
     tag "$sample_id"
     conda "${projectDir}/env.yaml"
-
-    publishDir "${params.outdir}/alns", mode: 'copy'
-
+    storeDir "${params.outdir}/alns"
     input:
     tuple val(sample_id), path(fastq)
     path reference
-
     output:
     tuple val(sample_id), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
-
     script:
     """
     minimap2 \
@@ -20,7 +16,6 @@ process MINIMAP2_ALIGN {
         -t ${task.cpus} \
         ${reference} ${fastq} | \
     samtools sort -@ 16 -O BAM -o ${sample_id}.bam
-
     samtools index ${sample_id}.bam
     """
 }

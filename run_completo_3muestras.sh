@@ -19,10 +19,18 @@ procesar_muestra() {
     local SAMPLE=$1
     local TARFILE="${SAMPLE}.ONT.rebasecalled.fastq.tar.gz"
     local FASTQFILE="${SAMPLE}.fastq.gz"
+    local BAMFILE="${PIPE_DIR}/results_3muestras/alns/${SAMPLE}.bam"
 
     echo ""
     echo "=== [$SAMPLE] INICIO: $(date) ==="
     du -sh ~
+
+    # Si el BAM ya existe, no hace falta el FASTQ
+    if [ -f "$BAMFILE" ]; then
+        echo "=== [$SAMPLE] BAM ya existe, saltando descarga de FASTQ ==="
+        echo "BAM: $(du -sh $BAMFILE | cut -f1)"
+        return 0
+    fi
 
     if [ -f "${DATA_DIR}/${FASTQFILE}" ]; then
         echo "=== [$SAMPLE] $FASTQFILE ya existe, saltando descarga ==="
