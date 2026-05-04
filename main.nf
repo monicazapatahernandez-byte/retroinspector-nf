@@ -149,7 +149,7 @@ workflow {
             R_ENRICHMENT.out[2],   // egoCC
             R_ENRICHMENT.out[3],   // do
             R_ENRICHMENT.out[4],   // ncg
-            Channel.empty()        // other_sets (opcional)
+            Channel.value([])
         )
     }
 }

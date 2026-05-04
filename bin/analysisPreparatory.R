@@ -173,14 +173,14 @@ saveRDS(allIns, "allIns.rds")
 meDeletionsMin3 = fread(repeatMaskerVcfDelFile, skip = "#CHROM")
 meDeletionsMin3 = meDeletionsMin3[!INFO %like% "ME=[^;]*\\?[^;]*" & !INFO %like% "MEFAM=[^;]*\\?[^;]*"]
 meDeletionsMin3 = meDeletionsMin3[`#CHROM` %in% chrs]
+# Columnas de muestra: todo lo que viene después de FORMAT (columna 9)
+sample_cols = colnames(meDeletionsMin3)[10:ncol(meDeletionsMin3)]
+
 meDeletionsMin3[, `:=`(
     survivorId = ID,
     ID = paste0("surv", 1:nrow(meDeletionsMin3)),
     svlen = INFO %>% sub(".*SVLEN=-([0-9]+).*", "\\1", x = .) %>% as.numeric()
   )]
-
-# Columnas de muestra: todo lo que viene después de FORMAT (columna 9)
-sample_cols = colnames(meDeletionsMin3)[10:ncol(meDeletionsMin3)]
 
 genoFields = meDeletionsMin3[1, FORMAT] %>% unname() %>% stri_split_fixed(pattern = ":") %>% unlist()
 genoFieldsOfInt = c("GT", "PSV")

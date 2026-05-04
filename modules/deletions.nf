@@ -73,32 +73,25 @@ process GENOTYPE_DEL {
 
 process SURVIVOR_INTERPATIENT {
     conda "${projectDir}/env.yaml"
-
     publishDir "${params.outdir}/variants/survivor", mode: 'copy'
-
     input:
     path vcfs
     path csis
-
     output:
     tuple path("${params.all_prefix}.merged.survivor.vcf.gz"), path("${params.all_prefix}.merged.survivor.vcf.gz.csi")
-
     script:
     """
-    for vcf in ${vcfs}; do
+    for vcf in \$(echo "${vcfs}" | tr ' ' '\n' | sort); do
         bcftools view -O v -o \${vcf%.gz} \$vcf
         echo \${vcf%.gz} >> survivor_list.txt
     done
-
     SURVIVOR merge survivor_list.txt \
         ${params.survivor_inter} 1 1 -1 -1 1 \
         ${params.all_prefix}.merged.survivor.vcf
-
     cat ${params.all_prefix}.merged.survivor.vcf | \
         python3 ${projectDir}/bin/fixVCF.py | \
         bcftools sort -O z \
         -o ${params.all_prefix}.merged.survivor.vcf.gz
-
     bcftools index ${params.all_prefix}.merged.survivor.vcf.gz
     """
 }

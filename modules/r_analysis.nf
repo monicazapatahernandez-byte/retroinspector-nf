@@ -89,26 +89,27 @@ process R_REPORT {
     path egoCC
     path do_rds
     path ncg
-    path other_sets
+    val other_sets
 
     output:
     path "report.${params.all_prefix}.html"
 
     script:
     """
+    WD=\$(pwd)
     Rscript -e "rmarkdown::render('${projectDir}/bin/report.Rmd',
         output_file='report.${params.all_prefix}.html',
         output_dir=getwd(),
         params=list(
-            insertions_table='${insertions_table}',
-            all_ins='${all_ins}',
-            annotated_insertions='${annotated_insertions}',
-            me_deletions='${me_deletions}',
-            egoMF='${egoMF}',
-            egoBP='${egoBP}',
-            egoCC='${egoCC}',
-            do_rds='${do_rds}',
-            ncg='${ncg}',
+            insertions_table='\$WD/insertionsTable.rds',
+            all_ins='\$WD/allIns.rds',
+            annotated_insertions='\$WD/annotatedInsertionsMin3.rds',
+            me_deletions='\$WD/meDeletionsMin3.rds',
+            egoMF='\$WD/egoMF.rds',
+            egoBP='\$WD/egoBP.rds',
+            egoCC='\$WD/egoCC.rds',
+            do_rds='\$WD/do.rds',
+            ncg='\$WD/ncg.rds',
             plimit=${params.enrichment_pval}
         ))"
     """

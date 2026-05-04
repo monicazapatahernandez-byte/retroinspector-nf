@@ -17,6 +17,7 @@ process SNIFFLES2 {
     sniffles \
         --threads ${task.cpus} \
         --output-rnames \
+        --sample-id ${sample_id} \
         --input ${bam} \
         --vcf ${sample_id}.sniffles2.temp.vcf
 
