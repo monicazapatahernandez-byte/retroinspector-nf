@@ -537,6 +537,41 @@ ioi[SUPP_trusty > 0 & repeat.subclass == "SVA", .(
   flextable::set_caption(caption = "Count of SVA elements by name")
 ```
 
+<details><summary>Click to show table with _Alu_ counts by name.</summary>
+```{r}
+ioi[SUPP_trusty > 0 & repeat.subclass == "Alu", .(
+    Name = gsub("_", " ", name),
+    Unique = .N,
+    `Total\n(lax)` = sum(SUPP_min3),
+    `Total\n(strict)` = sum(SUPP_trusty)
+  ), by = .(name)][,-"name"][order(Name)] %>%
+  totalize() %>% flextable::flextable() %>%
+  flextable::theme_booktabs() %>%
+  flextable::border_inner_h(border = flextable::fp_border_default()) %>%
+  flextable::align(align = "center", part = "all") %>%
+  flextable::fix_border_issues() %>%
+  flextable::set_caption(caption = "Count of _Alu_ elements by name")
+```
+</details>
+
+<details><summary>Click to show table with L1 counts by name.</summary>
+```{r}
+ioi[SUPP_trusty > 0 & repeat.subclass == "L1", .(
+    Name = gsub("_", " ", name),
+    Unique = .N,
+    `Total\n(lax)` = sum(SUPP_min3),
+    `Total\n(strict)` = sum(SUPP_trusty)
+  ), by = .(name)][,-"name"][order(Name)] %>%
+  totalize() %>% flextable::flextable() %>%
+  flextable::theme_booktabs() %>%
+  flextable::border_inner_h(border = flextable::fp_border_default()) %>%
+  flextable::align(align = "center", part = "all") %>%
+  flextable::fix_border_issues() %>%
+  flextable::set_caption(caption = "Count of L1 elements by name")
+```
+</details>
+
+
 ```{r results="asis"}
 genic = roi[repeat.class %in% class1 & annot.subclass %in% c("cds", "introns", "promoters") & !is.na(annot.symbol),
     .SD[1], by = c("seqId", "annot.subclass")]
