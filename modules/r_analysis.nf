@@ -123,6 +123,7 @@ process R_COMPARE {
     tuple val(sample1), val(sample2)
     path insertions_table
     path annotated_insertions
+    path me_deletions
 
     output:
     path "${sample1}_vs_${sample2}.html"
@@ -136,6 +137,7 @@ process R_COMPARE {
         params=list(
             insertions_table='\$WD/insertionsTable.rds',
             annotated_insertions='\$WD/annotatedInsertionsMin3.rds',
+            me_deletions='\$WD/meDeletionsMin3.rds',
             sample1='${sample1}',
             sample2='${sample2}',
             samples='${params.all_prefix}'

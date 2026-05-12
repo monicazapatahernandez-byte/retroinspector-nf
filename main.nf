@@ -158,7 +158,8 @@ workflow {
             R_COMPARE(
                 ch_comparisons,
                 R_PREPARATORY.out[2],  // insertionsTable
-                R_PREPARATORY.out[1]   // annotatedInsertionsMin3
+                R_PREPARATORY.out[1],  // annotatedInsertionsMin3
+                R_PREPARATORY.out[4]   // meDeletionsMin3
             )
         }
     }
