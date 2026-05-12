@@ -129,12 +129,13 @@ process R_COMPARE {
 
     script:
     """
+    WD=\$(pwd)
     Rscript -e "rmarkdown::render('${projectDir}/bin/comparison.Rmd',
         output_file='${sample1}_vs_${sample2}.html',
         output_dir=getwd(),
         params=list(
-            insertions_table='${insertions_table}',
-            annotated_insertions='${annotated_insertions}',
+            insertions_table='\$WD/insertionsTable.rds',
+            annotated_insertions='\$WD/annotatedInsertionsMin3.rds',
             sample1='${sample1}',
             sample2='${sample2}',
             samples='${params.all_prefix}'

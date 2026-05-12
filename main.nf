@@ -20,6 +20,7 @@ include { GET_REFERENCE_REPEATS; GET_REFERENCE_GENOME; GET_REFERENCE_T2T } from 
 include { R_PREPARATORY;
           R_GENOTYPING;
           R_ENRICHMENT;
+          R_COMPARE;
           R_REPORT;
           GENERATE_VCF }            from './modules/r_analysis'
 
@@ -151,5 +152,14 @@ workflow {
             R_ENRICHMENT.out[4],   // ncg
             Channel.value([])
         )
+        // Comparación entre pares de muestras
+        if (params.comparisons) {
+            ch_comparisons = Channel.fromList(params.comparisons)
+            R_COMPARE(
+                ch_comparisons,
+                R_PREPARATORY.out[2],  // insertionsTable
+                R_PREPARATORY.out[1]   // annotatedInsertionsMin3
+            )
+        }
     }
 }

@@ -1,60 +1,45 @@
-#! /usr/bin/env python3
-import argparse
+#! /usr/bin/env python
 import subprocess
-import tempfile
+import sys
 import os
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input_bed")
-    parser.add_argument("sva_types")
-    parser.add_argument("output_bed")
-    args = parser.parse_args()
+input_bed = sys.argv[1]
+svaf_types = sys.argv[2]
+output_bed = sys.argv[3]
 
-    tmpFasta = args.output_bed + ".tmp.fasta"
-    svafDb = args.output_bed + ".blastdb"
-    blastOut = args.output_bed + ".blast"
+output_fasta = "svaf_tmp.fasta"
+output_blast = "svaf_tmp.blast6"
+db_prefix = "svaf_db"
 
-    # Read rm.bed and save SVA-F in a temp fasta file
-    with open(args.input_bed) as inputBed, \
-            open(tmpFasta, "w") as fasta:
-        fastaLines = []
-        for line in inputBed.readlines():
-            line = line.rstrip().split("\t")
-            name = line[3]
-            seqId = line[6]
-            sequence = line[17]
-            fastaLines.append(f">{seqId}\n{sequence}\n")
-        fasta.writelines(fastaLines)
+with open(input_bed) as inputBed, open(output_fasta, "w") as fasta:
+    fastaLines = []
+    for line in inputBed.readlines():
+        line = line.rstrip().split("\t")
+        name = line[3]
+        seqId = line[6]
+        sequence = line[17]
+        fastaLines.append(f">{seqId}\n{sequence}\n")
+    fasta.writelines(fastaLines)
 
-    # Create blastn db from sva_types and run blastn
-    print(f"svaf db: {svafDb}")
-    subprocess.run(["makeblastdb", "-in", args.sva_types,
-                   "-out", svafDb, "-dbtype", "nucl"])
-    subprocess.run(["blastn", "-task", "blastn", "-evalue", "1e-20",
-                   "-db", svafDb, "-query", tmpFasta,
-                   "-outfmt", "6", "-out", blastOut])
+subprocess.run(["makeblastdb", "-in", svaf_types, "-out", db_prefix, "-dbtype", "nucl"])
+subprocess.run(["blastn", "-task", "blastn", "-evalue", "1e-20", "-db", db_prefix,
+               "-query", output_fasta, "-outfmt", "6", "-out", output_blast])
 
-    # Create dict from blastn results
-    blastResults = {}
-    with open(blastOut) as blast:
+blastResults = {}
+if os.path.exists(output_blast):
+    with open(output_blast) as blast:
         for line in blast.readlines():
             line = line.split("\t")
             seqId = line[0]
             if seqId not in blastResults:
                 blastResults[seqId] = line[1]
 
-    # Read rm.bed again, replace SVA-F with SVA-F1 if in blast results
-    with open(args.input_bed) as inputBed, \
-        open(args.output_bed, "w") as o:
-        lines = []
-        for line in inputBed.readlines():
-            line = line.rstrip().split("\t")
-            seqId = line[6]
-            if seqId in blastResults:
-                line[3] = blastResults[seqId]
-            lines.append("\t".join(line) + "\n")
-        o.writelines(lines)
-
-if __name__ == "__main__":
-    main()
+with open(input_bed) as inputBed, open(output_bed, "w") as o:
+    lines = []
+    for line in inputBed.readlines():
+        line = line.rstrip().split("\t")
+        seqId = line[6]
+        if seqId in blastResults:
+            line[3] = blastResults[seqId]
+        lines.append("\t".join(line) + "\n")
+    o.writelines(lines)

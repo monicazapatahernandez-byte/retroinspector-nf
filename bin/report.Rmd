@@ -373,7 +373,7 @@ if (nrow(ubiquitous) != 0) {
 
 - `r insertionsTable[maf >= 0.5 & SUPP_trusty > 0] %>% nrow()` TE insertions were found with an AF >= 0.5.
 
-```{r fig.align="center"}
+```{r fig.align="center", fig.cap="Allele frequency is shown for insertions for each chromosome. Each dot marks a different insertion."}
 copy = copy(insertionsTable[SUPP_trusty > 0])[, `:=`(seqnames = seqnames %>% sub(pattern = "chr(.+)", replacement = "\\1", x = .) %>% as.numeric())]
 copy = copy[!is.na(seqnames)]
 qqman::manhattan(
@@ -392,7 +392,7 @@ qqman::manhattan(
 
 ### Genome distribution
 
-```{r fig.dim=c(14, 8), fig.align="center"}
+```{r fig.dim=c(14, 8), fig.align="center", fig.cap="A) Unique TE insertions occurences on the genome. B) Gene annotations of TE insertions on the genome. A single TE may be annotated more than once."}
 fig1a = insertionsTable[seqnames %in% chrs &
           SUPP_trusty > 0 &
           repeat.class %in% c(class1, class2) &
@@ -477,7 +477,9 @@ tableFamilies %>%
 
 ## Class I Elements
 
-```{r fig.dim=c(14, 8), fig.align="center"}
+### Distribution
+
+```{r fig.dim=c(14, 8),fig.align="center", fig.cap="A) Unique class I TE insertions occurrences on the genome. B) Gene annotations of class I TE insertions on the genome. A single TE may be annotated more than once."}
 fig1a = insertionsTable[seqnames %in% chrs &
           SUPP_trusty > 0 &
           repeat.class %in% class1 &
@@ -521,6 +523,8 @@ fig1b = annotatedInsertionsMin3[seqnames %in% chrs &
   facet_wrap_custom(~seqnames, ncol = 5, scales = "free_x", drop = F, scale_overrides = chrScales)
 fig1a + fig1b + plot_annotation(tag_levels = 'A')
 ```
+
+### Detailed classification
 
 ```{r}
 ioi[SUPP_trusty > 0 & repeat.subclass == "SVA", .(
@@ -571,6 +575,9 @@ ioi[SUPP_trusty > 0 & repeat.subclass == "L1", .(
 ```
 </details>
 
+### Class I TEs on gene sequences
+
+
 
 ```{r results="asis"}
 genic = roi[repeat.class %in% class1 & annot.subclass %in% c("cds", "introns", "promoters") & !is.na(annot.symbol),
@@ -599,7 +606,9 @@ if (nrow(genic) == 0) {
 
 ## Class II Elements
 
-```{r fig.dim=c(14, 8)}
+### Distribution
+
+```{r fig.dim=c(14, 8), fig.cap="A) Unique class II TE insertions occurrences on the genome. B) Gene annotations of class II TE insertions on the genome. A single TE may be annotated more than once."}
 fig1a = insertionsTable[seqnames %in% chrs &
           SUPP_trusty > 0 &
           repeat.class %in% class2 &
@@ -644,6 +653,8 @@ fig1b = annotatedInsertionsMin3[seqnames %in% chrs &
 fig1a + fig1b + plot_annotation(tag_levels = 'A')
 ```
 
+### Class II TEs on gene sequences
+
 ```{r results="asis"}
 genic = roi[repeat.class %in% class2 & annot.subclass %in% c("cds", "introns", "promoters") & !is.na(annot.symbol),
     .SD[1], by = c("seqId", "annot.subclass")]
@@ -683,7 +694,7 @@ meDeletionsMin3 = meDeletionsMin3[!(maf == 0 & SUPP_trusty > 0)]
 meDeletionsMin3 = meDeletionsMin3[stri_order(seqnames, numeric = T)]
 ```
 
-```{r fig.align="center"}
+```{r fig.align="center",fig.cap="Allele frequency is shown for TE deletions for each chromosome. Each dot marks a different deletion"}
 copy = copy(meDeletionsMin3[SUPP_trusty > 0])[, `:=`(
     seqnames = factor(seqnames, levels = chrs) %>% as.integer()
   )]
@@ -707,7 +718,15 @@ pLimit = params$plimit %>% as.numeric()
 
 ## Gene Ontology
 
-```{r go, results="asis", fig.align="center"}
+```{r}
+goCaptions = c(
+  "Barplot for enriched categories. Values on top have lower p values.",
+  "Enrichment map. Categories are connected by genes in common. Dot size indicates number of genes, dot color indicates adjusted _p_ value.",
+  "Gene-concept network. Categories (brown dots) are linked by genes in common (gray dots). The size of category dots indicates gene count."
+)
+```
+
+```{r go, results="asis", fig.align="center", fig.cap = goCaptions}
 fullNames = list(MF = "Molecular Function", BP = "Biological Process", CC = "Cellular Component")
 for (x in c("MF", "BP", "CC")) {
   name = paste0("ego", x)
@@ -755,7 +774,7 @@ for (x in c("MF", "BP", "CC")) {
 
 ## Disease Ontology
 
-```{r do, results="asis"}
+```{r do, results="asis", fig.align="center", fig.cap=goCaptions[1]}
 do = readRDS(params$do_rds)
 if (is.null(do)) {
   cat("No significant results were found in DO.\n\n")
@@ -771,9 +790,22 @@ if (is.null(do)) {
 }
 ```
 
+<!-- ## KEGG disabled because enrichKEGG wont work-->
+
+<!-- ```{r kegg, include=F,results="asis"} -->
+<!-- # if (is.null(kegg)) { -->
+<!-- #     cat("No significant results were found in KEGG.\n\n") -->
+<!-- # } else { -->
+<!-- #   keggDt = kegg@result %>% as.data.table() -->
+<!-- #   if (nrow(keggDt[p.adjust <= pLimit]) >= 1) { -->
+<!-- #     barplot(kegg) %>% print() -->
+<!-- #   } -->
+<!-- # } -->
+<!-- ``` -->
+
 ## Network of Cancer Genes
 
-```{r ncg, results="asis"}
+```{r ncg, results="asis", fig.align="center", fig.cap=goCaptions[1]}
 ncg = readRDS(params$ncg)
 if (is.null(ncg)) {
   cat("No significant results were found in NCG.\n\n")
@@ -788,3 +820,6 @@ if (is.null(ncg)) {
   }
 }
 ```
+<!-- Sets comparison disabled in Nextflow version (no otherSets input) -->
+<!-- ```{r eval=F,child="sets.Rmd"} -->
+<!-- ``` -->
