@@ -155,15 +155,16 @@ workflow {
             R_ENRICHMENT.out[4],   // ncg
             Channel.value([])
         )
-        // Comparación entre pares de muestras
-        if (params.comparisons) {
-            ch_comparisons = Channel.fromList(params.comparisons)
-            R_COMPARE(
-                ch_comparisons,
-                R_PREPARATORY.out[2],  // insertionsTable
-                R_PREPARATORY.out[1],  // annotatedInsertionsMin3
-                R_PREPARATORY.out[4]   // meDeletionsMin3
-            )
-        }
+// Comparación entre pares de muestras
+if (params.comparisons) {
+    ch_comparisons = Channel.fromList(params.comparisons)
+    R_COMPARE(
+        ch_comparisons,
+        R_PREPARATORY.out[2],  // insertionsTable
+        R_PREPARATORY.out[1],  // annotatedInsertionsMin3
+        R_PREPARATORY.out[4],  // meDeletionsMin3
+        ch_sample_ids          // 
+    )
+}
     }
 }

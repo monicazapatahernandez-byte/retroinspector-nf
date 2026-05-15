@@ -130,6 +130,7 @@ process R_COMPARE {
     path insertions_table
     path annotated_insertions
     path me_deletions
+    val sample_ids
 
     output:
     path "${sample1}_vs_${sample2}.html"
@@ -146,7 +147,7 @@ process R_COMPARE {
             me_deletions='\$WD/meDeletionsMin3.rds',
             sample1='${sample1}',
             sample2='${sample2}',
-            samples='${params.all_prefix}'
+            samples='${sample_ids.join(',')}'
         ))"
     """
 }
