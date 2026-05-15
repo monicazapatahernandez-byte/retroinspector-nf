@@ -44,6 +44,7 @@ process R_GENOTYPING {
     path "${params.all_prefix}.me.deletions.txt"
     path "${params.all_prefix}.me.deletions.lax.txt"
     path "${params.all_prefix}.genes_deletions.rds"
+    path "${params.all_prefix}.hallmarks_input.tsv"
 
     script:
     """
@@ -95,6 +96,7 @@ process R_REPORT {
     path do_rds
     path ncg
     val other_sets
+    path hallmarks
 
     output:
     path "report.${params.all_prefix}.html"
@@ -115,7 +117,8 @@ process R_REPORT {
             egoCC='\$WD/egoCC.rds',
             do_rds='\$WD/do.rds',
             ncg='\$WD/ncg.rds',
-            plimit=${params.enrichment_pval}
+            plimit=${params.enrichment_pval},
+            hallmarks='\$WD/hallmarks.tsv'
         ))"
     """
 }

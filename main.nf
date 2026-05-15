@@ -23,6 +23,7 @@ include { R_PREPARATORY;
           R_COMPARE;
           R_REPORT;
           GENERATE_VCF }            from './modules/r_analysis'
+include { HALLMARKS }                from './modules/hallmarks'
 
 // Mensaje de inicio
 log.info """
@@ -143,6 +144,12 @@ workflow {
             file("${projectDir}/data/header.txt")
         )
 
+        // 10. Hallmarks de retrotransposición
+        HALLMARKS(
+            R_GENOTYPING.out[6],  // hallmarks_input.tsv
+            ch_reference
+        )
+
         R_REPORT(
             R_PREPARATORY.out[2],  // insertionsTable
             R_PREPARATORY.out[3],  // allIns
@@ -153,7 +160,8 @@ workflow {
             R_ENRICHMENT.out[2],   // egoCC
             R_ENRICHMENT.out[3],   // do
             R_ENRICHMENT.out[4],   // ncg
-            Channel.value([])
+            Channel.value([]),  // other_sets
+            HALLMARKS.out
         )
 // Comparación entre pares de muestras
 if (params.comparisons) {

@@ -12,6 +12,7 @@ params:
   do_rds: ""
   ncg: ""
   plimit: 0.05
+  hallmarks: ""
 editor_options:
   chunk_output_type: console
 output:
@@ -837,6 +838,82 @@ if (nrow(del_alleles) == 0) {
   cat("</details>\n\n")
 }
 ```
+
+# Retrotransposition hallmarks
+
+```{r hallmarks_data}
+if (file.exists(params$hallmarks) && file.info(params$hallmarks)$size > 0) {
+  hallmarks = read.table(params$hallmarks, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+  hallmarks$has_polya    = as.logical(hallmarks$has_polya)
+  hallmarks$has_l1_motif = as.logical(hallmarks$has_l1_motif)
+} else {
+  hallmarks = data.frame(seqId = character(), has_polya = logical(), has_l1_motif = logical())
+}
+```
+
+The search for retrotransposition hallmarks was performed on `r nrow(hallmarks)` strict TE insertions.
+
+- `r sum(hallmarks$has_polya)` insertions (`r round(sum(hallmarks$has_polya) / nrow(hallmarks) * 100, 1)`%) present a polyA tail.
+- `r sum(hallmarks$has_l1_motif)` insertions (`r round(sum(hallmarks$has_l1_motif) / nrow(hallmarks) * 100, 1)`%) present the L1 endonuclease target motif.
+- `r sum(hallmarks$has_polya & hallmarks$has_l1_motif)` insertions (`r round(sum(hallmarks$has_polya & hallmarks$has_l1_motif) / nrow(hallmarks) * 100, 1)`%) present both hallmarks.
+
+## Summary by TE family
+
+```{r hallmarks_summary}
+hallmarks_ioi = merge(
+  hallmarks,
+  ioi[, .(seqId, repeat.class, repeat.subclass)],
+  by = "seqId",
+  all.x = TRUE
+)
+setDT(hallmarks_ioi)
+
+hallmarks_summary = hallmarks_ioi[
+  repeat.class %in% c("Retroposon", "SINE", "LINE"),
+  .(
+    Total          = .N,
+    `polyA`        = sum(has_polya),
+    `L1 motif`     = sum(has_l1_motif),
+    `Both`         = sum(has_polya & has_l1_motif)
+  ),
+  by = .(repeat.class, repeat.subclass)
+][order(repeat.class, repeat.subclass)] %T>%
+  setnames(c("repeat.class", "repeat.subclass"), c("Family", "Subfamily"))
+
+hallmarks_summary %>%
+  flextable::flextable() %>%
+  flextable::merge_v(j = "Family") %>%
+  flextable::theme_booktabs() %>%
+  flextable::border_inner_h(border = flextable::fp_border_default()) %>%
+  flextable::align(align = "center", part = "all") %>%
+  flextable::fix_border_issues()
+```
+
+## Detailed list
+
+```{r hallmarks_detail, results="asis"}
+hallmarks_detail = hallmarks_ioi[has_polya == TRUE | has_l1_motif == TRUE]
+if (nrow(hallmarks_detail) == 0) {
+  cat("No insertions with retrotransposition hallmarks were found.")
+} else {
+  cat(paste0("<details><summary>Click to show table with ", nrow(hallmarks_detail), " insertions with at least one hallmark.</summary>\n\n"))
+  hallmarks_detail[
+    , .(
+        seqId     = seqId,
+        Family    = paste0(repeat.class, " (", repeat.subclass, ")"),
+        `polyA`   = fifelse(has_polya,    "\u2713", "\u2717"),
+        `L1 motif`= fifelse(has_l1_motif, "\u2713", "\u2717")
+      )
+  ] %>%
+  flextable::flextable() %>%
+  flextable::autofit() %>%
+  flextable::theme_booktabs() %>%
+  flextable::align(align = "center", part = "all") %>%
+  flextable::flextable_to_rmd()
+  cat("</details>\n\n")
+}
+```
+
 # Enrichment analysis
 
 ```{r}

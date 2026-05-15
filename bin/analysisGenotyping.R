@@ -71,6 +71,13 @@ vcf = vcf[SUPP_geno > 0, .(
     sep = ";")
 )]
 fwrite(vcf, paste0(allPrefix, ".me.insertions.txt"), sep = "\t")
+
+# Exportar input para hallmarks.py (inserciones estrictas)
+fwrite(
+    vcf[, .(seqId = ID, seqnames = `#CHROM`, start = POS, vcf_alt = ALT)],
+    paste0(allPrefix, ".hallmarks_input.tsv"),
+    sep = "\t"
+)
 ioi3 = annotatedInsertionsMin3[
   repeat.class %in% c("Retroposon", "SINE", "LINE", "DNA", "LTR") &
   repeat.percentage >= 0.85][, .SD[1], by = seqId][,
