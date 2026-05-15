@@ -7,7 +7,7 @@ include { CUTESV }                   from './modules/cutesv'
 include { SNIFFLES2 }                from './modules/sniffles2'
 include { ASSEMBLY_ALLELES }         from './modules/assembly_alleles'
 include { MERGE_INTRAPATIENT }       from './modules/merge_intrapatient'
-include { MOSDEPTH_INS; 
+include { MOSDEPTH_INS;
           GENOTYPE_INS }             from './modules/genotype_insertions'
 include { MERGE_INTERPATIENT }       from './modules/merge_interpatient'
 include { REPEATMASKER }             from './modules/repeatmasker'
@@ -128,15 +128,18 @@ workflow {
 
         R_GENOTYPING(
             R_PREPARATORY.out[2],  // insertionsTable
-            R_PREPARATORY.out[1],   // annotatedInsertionsMin3
+            R_PREPARATORY.out[1],  // annotatedInsertionsMin3
+            R_PREPARATORY.out[4],  // meDeletionsMin3
             ch_sample_ids
         )
 
         R_ENRICHMENT(R_GENOTYPING.out[0])  // genes.rds
 
         GENERATE_VCF(
-            R_GENOTYPING.out[1],   // vcf_body
-            R_GENOTYPING.out[2],   // vcf_body_lax
+            R_GENOTYPING.out[1],   // insertions_vcf_body
+            R_GENOTYPING.out[2],   // insertions_vcf_body_lax
+            R_GENOTYPING.out[3],   // deletions_vcf_body
+            R_GENOTYPING.out[4],   // deletions_vcf_body_lax
             file("${projectDir}/data/header.txt")
         )
 

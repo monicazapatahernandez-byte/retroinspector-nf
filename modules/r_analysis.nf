@@ -3,8 +3,8 @@ process R_PREPARATORY {
 
     publishDir "${params.outdir}/rds", mode: 'copy'
 
-    input: 
-    path rm_bed 
+    input:
+    path rm_bed
     tuple path(del_vcf), path(del_csi)
     val sample_ids
 
@@ -34,19 +34,24 @@ process R_GENOTYPING {
     input:
     path insertions_table
     path annotated_insertions
+    path me_deletions
     val sample_ids
 
     output:
     path "genes.rds"
     path "${params.all_prefix}.me.insertions.txt"
     path "${params.all_prefix}.me.insertions.lax.txt"
+    path "${params.all_prefix}.me.deletions.txt"
+    path "${params.all_prefix}.me.deletions.lax.txt"
+    path "${params.all_prefix}.genes_deletions.rds"
 
     script:
     """
     Rscript ${projectDir}/bin/analysisGenotyping.R \
         ${insertions_table} \
         ${annotated_insertions} \
-        ${params.all_prefix}  \
+        ${params.all_prefix} \
+        ${me_deletions} \
         ${sample_ids.join(' ')}
     """
 }
@@ -114,6 +119,7 @@ process R_REPORT {
         ))"
     """
 }
+
 process R_COMPARE {
     conda "${projectDir}/r.yaml"
 
@@ -151,22 +157,34 @@ process GENERATE_VCF {
     publishDir "${params.outdir}/variants", mode: 'copy'
 
     input:
-    path vcf_body
-    path vcf_body_lax
+    path insertions_body
+    path insertions_body_lax
+    path deletions_body
+    path deletions_body_lax
     path header
 
     output:
     tuple path("${params.all_prefix}.te.vcf.gz"), path("${params.all_prefix}.te.vcf.gz.csi")
     tuple path("${params.all_prefix}.te.lax.vcf.gz"), path("${params.all_prefix}.te.lax.vcf.gz.csi")
+    tuple path("${params.all_prefix}.te.deletions.vcf.gz"), path("${params.all_prefix}.te.deletions.vcf.gz.csi")
+    tuple path("${params.all_prefix}.te.deletions.lax.vcf.gz"), path("${params.all_prefix}.te.deletions.lax.vcf.gz.csi")
 
     script:
     """
-    cat ${header} ${vcf_body} | \
+    cat ${header} ${insertions_body} | \
         bcftools sort -O z -o ${params.all_prefix}.te.vcf.gz
     bcftools index ${params.all_prefix}.te.vcf.gz
 
-    cat ${header} ${vcf_body_lax} | \
+    cat ${header} ${insertions_body_lax} | \
         bcftools sort -O z -o ${params.all_prefix}.te.lax.vcf.gz
     bcftools index ${params.all_prefix}.te.lax.vcf.gz
+
+    cat ${header} ${deletions_body} | \
+        bcftools sort -O z -o ${params.all_prefix}.te.deletions.vcf.gz
+    bcftools index ${params.all_prefix}.te.deletions.vcf.gz
+
+    cat ${header} ${deletions_body_lax} | \
+        bcftools sort -O z -o ${params.all_prefix}.te.deletions.lax.vcf.gz
+    bcftools index ${params.all_prefix}.te.deletions.lax.vcf.gz
     """
 }

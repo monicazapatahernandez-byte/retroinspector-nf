@@ -180,9 +180,6 @@ class1 = c("Retroposon", "SINE", "LINE", "LTR")
 class2 = c("DNA")
 ```
 
-<div class="note">
-__Note__: Insertion ids mentioned in this report are for internal use (not linked to any database) and will change if the pipeline is re-run.
-</div>
 
 # General figures
 
@@ -190,9 +187,6 @@ __Note__: Insertion ids mentioned in this report are for internal use (not linke
 
 ### Lax criterion
 
-<div class="note">
-__Note__: A "unique" insertion is the merged result after the allele-aware merging from both callers for each patient, and then merged across patients. If we were working with SNPs, a "unique" SNP would be, rs123, for example, defined by its position and alternative(s) allele(s). A unique insertion is defined by its position, length, and inserted sequence.
-</div>
 
 The analysis has identified:
 
@@ -689,6 +683,32 @@ meDeletionsMin3 = readRDS(params$me_deletions)
 - `r meDeletionsMin3[SUPP_trusty > 0] %>% nrow()` TE deletions have been found, adding up to `r meDeletionsMin3[SUPP_trusty > 0]$SUPP_trusty %>% sum()` occurrences among cases.
 - These deletions have a mean prevalence per sample of `r meDeletionsMin3[SUPP_trusty > 0]$SUPP_trusty %>% mean()` ± `r meDeletionsMin3[SUPP_trusty > 0]$SUPP_trusty %>% sd()` (median of `r meDeletionsMin3[SUPP_trusty > 0]$SUPP_trusty %>% median()`).
 
+
+```{r}
+meDeletionsMin3[SUPP_trusty > 0,
+  .(
+    Unique = .N,
+    `Total\n(lax)` = sum(SUPP_min3),
+    `Total\n(strict)` = sum(SUPP_trusty)
+  ),
+  by = .(repeat.class, repeat.subclass)
+][order(repeat.class, tolower(repeat.subclass))] %>%
+  rbind(data.table(
+    repeat.class = "Total",
+    repeat.subclass = "-",
+    Unique = sum(.$Unique),
+    `Total\n(lax)` = sum(.$`Total\n(lax)`),
+    `Total\n(strict)` = sum(.$`Total\n(strict)`)
+  )) %T>%
+  setnames(c("repeat.class", "repeat.subclass"), c("Repeat\nfamily", "Repeat\nsubfamily")) %>%
+  flextable::flextable() %>%
+  flextable::merge_v(j = c("Repeat\nfamily")) %>%
+  flextable::theme_booktabs() %>%
+  flextable::border_inner_h(border = flextable::fp_border_default()) %>%
+  flextable::align(align = "center", part = "all") %>%
+  flextable::fix_border_issues()
+```
+
 ```{r}
 meDeletionsMin3 = meDeletionsMin3[!(maf == 0 & SUPP_trusty > 0)]
 meDeletionsMin3 = meDeletionsMin3[stri_order(seqnames, numeric = T)]
@@ -705,7 +725,118 @@ qqman::manhattan(
   chrlabs = chrs %>% sub(pattern = "chr(.+)", replacement = "\\1", x = .)
 )
 ```
+```{r fig.align="center",fig.cap="Allele frequency is shown for TE deletions for each chromosome. Each dot marks a different deletion"}
+copy = copy(meDeletionsMin3[SUPP_trusty > 0])[, `:=`(
+    seqnames = factor(seqnames, levels = chrs) %>% as.integer()
+  )]
+qqman::manhattan(
+  copy,
+  chr = "seqnames", bp = "start", snp = "id", p = "maf",
+  logp = F, cex = 0.5, cex.axis = 0.9, ylab = "AF",
+  chrlabs = chrs %>% sub(pattern = "chr(.+)", replacement = "\\1", x = .)
+)
+```
 
+## Genome distribution
+
+```{r fig.dim=c(14, 8), fig.align="center", fig.cap="Unique TE deletions occurrences on the genome by chromosome."}
+meDeletionsMin3[seqnames %in% chrs &
+          SUPP_trusty > 0, .SD[1],
+        by = c("id")][, seqnames := factor(seqnames, levels = chrs)] %>%
+  ggplot(data = ., aes(x = start, fill = seqnames)) +
+  geom_histogram(bins = 35) +
+  theme_light() +
+  theme(
+    legend.position = "none",
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.title = element_blank()
+  ) +
+  facet_wrap_custom(~seqnames, ncol = 5, scales = "free_x", drop = F, scale_overrides = chrScales)
+```
+
+## Detailed classification
+
+```{r}
+del_roi = meDeletionsMin3[repeat.class %in% c(class1, class2) & SUPP_trusty > 0]
+del_ioi = del_roi[, .SD[1], by = id][, c("id", "seqnames", "start", "end", "repeat.class", "repeat.subclass",
+                                         "name", "svlen", "SUPP_min3", "SUPP_trusty")]
+```
+
+```{r}
+del_ioi[
+  SUPP_trusty > 0 &
+    repeat.class %in% c("DNA", "LINE", "LTR", "Retroposon", "SINE"),
+  .(
+    Unique = .N,
+    `Total\n(lax)` = sum(SUPP_min3),
+    `Total\n(strict)` = sum(SUPP_trusty)
+  ),
+  by = .(repeat.class, repeat.subclass)
+][
+  order(repeat.class, tolower(repeat.subclass))
+] %>%
+  rbind(data.table(
+    repeat.class = "Total",
+    repeat.subclass = "-",
+    Unique = sum(.$Unique),
+    `Total\n(lax)` = sum(.$`Total\n(lax)`),
+    `Total\n(strict)` = sum(.$`Total\n(strict)`)
+  )) %T>%
+  setnames(c("repeat.class", "repeat.subclass"), c("Repeat\nfamily", "Repeat\nsubfamily")) %>%
+  flextable::flextable() %>%
+  flextable::merge_v(j = c("Repeat\nfamily")) %>%
+  flextable::theme_booktabs() %>%
+  flextable::border_inner_h(border = flextable::fp_border_default()) %>%
+  flextable::align(align = "center", part = "all") %>%
+  flextable::fix_border_issues()
+```
+
+<details><summary>Click to show table with TE deletion counts by name.</summary>
+```{r}
+del_ioi[SUPP_trusty > 0, .(
+    Name = gsub("_", " ", name),
+    Unique = .N,
+    `Total\n(lax)` = sum(SUPP_min3),
+    `Total\n(strict)` = sum(SUPP_trusty),
+    `Mean\nSVLEN` = mean(svlen) %>% as.integer()
+  ), by = .(name)][,-"name"][order(-Unique)] %>%
+  flextable::flextable() %>%
+  flextable::theme_booktabs() %>%
+  flextable::border_inner_h(border = flextable::fp_border_default()) %>%
+  flextable::align(align = "center", part = "all") %>%
+  flextable::fix_border_issues()
+```
+</details>
+
+```{r results="asis"}
+del_alleles = del_ioi[SUPP_trusty > 0]
+if (nrow(del_alleles) == 0) {
+  cat("No TE deletions were found.")
+} else {
+  cat(paste0("<details><summary>Click to show table with ", nrow(del_alleles)," deletion entries.</summary>\n\n"))
+  del_alleles[
+      , .(Position = paste0(seqnames, ":", start %>% format(big.mark = "\u202F", trim = T)),
+          Length = svlen,
+          Type = paste0(repeat.class, " (", repeat.subclass, ")"),
+          Name = gsub("_", " ", name),
+          Occurrences_lax = SUPP_min3,
+          Occurrences_strict = SUPP_trusty
+      )
+      ][stringi::stri_order(Position, numeric = T)] %>%
+  flextable::flextable() %>%
+  flextable::autofit() %>%
+  flextable::theme_booktabs() %>%
+  flextable::align_nottext_col(align = "center") %>%
+  flextable::flextable_to_rmd()
+  cat("</details>\n\n")
+}
+```
 # Enrichment analysis
 
 ```{r}
