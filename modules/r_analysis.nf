@@ -7,6 +7,8 @@ process R_PREPARATORY {
     path rm_bed
     tuple path(del_vcf), path(del_csi)
     val sample_ids
+    path gtf_file
+    val genome
 
     output:
     path "annotation.rds"
@@ -22,7 +24,9 @@ process R_PREPARATORY {
         ${del_vcf} \
         ${params.min_read_support} \
         ${params.all_prefix} \
-        ${sample_ids.join(' ')}
+        ${sample_ids.join(' ')} \
+        ${gtf_file} \
+        ${genome}
     """
 }
 
@@ -102,9 +106,10 @@ process R_REPORT {
     path "report.${params.all_prefix}.html"
 
     script:
+    def report_rmd = params.genome == "t2t" ? "report_t2t" : "report"
     """
     WD=\$(pwd)
-    Rscript -e "rmarkdown::render('${projectDir}/bin/report.Rmd',
+    Rscript -e "rmarkdown::render('${projectDir}/bin/${report_rmd}.Rmd',
         output_file='report.${params.all_prefix}.html',
         output_dir=getwd(),
         params=list(

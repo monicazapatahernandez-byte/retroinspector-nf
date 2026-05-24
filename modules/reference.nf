@@ -44,3 +44,48 @@ process GET_REFERENCE_T2T {
     gunzip chm13v2.0.fa.gz
     """
 }
+
+process GET_REFERENCE_REPEATS_T2T {
+    conda "${projectDir}/env.yaml"
+    publishDir "${params.outdir}/data", mode: 'copy'
+    output:
+    tuple path("repeatsReferenceTE_t2t.bed.gz"), path("repeatsReferenceTE_t2t.bed.gz.csi")
+    script:
+    """
+    wget -O chm13_rm_raw.bed \
+        https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/annotation/chm13v2.0_RepeatMasker_4.1.2p1.2022Apr14.bed
+    sort -k1,1 -k2,2n chm13_rm_raw.bed | bgzip > repeatsReferenceTE_t2t.bed.gz
+    tabix --csi -p bed repeatsReferenceTE_t2t.bed.gz
+    """
+}
+
+process GET_ANNOTATION_T2T {
+    conda "${projectDir}/env.yaml"
+    publishDir "${params.outdir}/data", mode: 'copy'
+    output:
+    path "hs1.ncbiRefSeq.gtf"
+    script:
+    """
+    wget -O hs1.ncbiRefSeq.gtf.gz \
+        https://hgdownload.soe.ucsc.edu/goldenPath/hs1/bigZips/genes/hs1.ncbiRefSeq.gtf.gz
+    gunzip hs1.ncbiRefSeq.gtf.gz
+    """
+}
+
+process GET_REPEATMASKER_LIB_T2T {
+    conda "${projectDir}/env_repeatmasker_t2t.yaml"
+    storeDir "${params.outdir}/data/rm_lib_t2t"
+    output:
+    path "Libraries"
+    script:
+    """
+    wget -O humanAutoXYape.embl \
+        https://raw.githubusercontent.com/jessicaStorer88/RepeatMasker_library_CHM13/main/humanAutoXYape.embl
+    RM_SHARE=\$(dirname \$(which RepeatMasker))/../share/RepeatMasker
+    cp -r \${RM_SHARE}/Libraries/ Libraries/
+    python3 \${RM_SHARE}/famdb.py \
+        -i Libraries/famdb \
+        append humanAutoXYape.embl \
+        --name 'T2T_CHM13_repeats'
+    """
+}

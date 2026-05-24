@@ -27,8 +27,12 @@ bedRecord = namedtuple("bedRecord", # Not a general description of BED records, 
     ["chrom", "start", "end", "name","family"])
 def processBedRecord(string):
     s = string.split("\t")
-
-    return bedRecord(s[0], int(s[1]) + 1, int(s[2]), s[4], s[5])
+    if len(s) >= 8:
+        # Formato CHM13 (10 columnas): chr, start, end, name, score, strand, class, subclass, ...
+        return bedRecord(s[0], int(s[1]) + 1, int(s[2]), s[3], s[6] + "/" + s[7])
+    else:
+        # Formato hg38 (6 columnas): chr, start, end, strand, name, class/subclass
+        return bedRecord(s[0], int(s[1]) + 1, int(s[2]), s[4], s[5])
 
 def processDEL (sv, bedPath):
     bed = TabixFile(bedPath, index = bedPath + ".csi")

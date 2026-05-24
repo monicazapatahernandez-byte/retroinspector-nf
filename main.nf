@@ -16,7 +16,9 @@ include { SURVIVOR_INTRAPATIENT;
           GENOTYPE_DEL;
           SURVIVOR_INTERPATIENT;
           GET_DELETIONS }            from './modules/deletions'
-include { GET_REFERENCE_REPEATS; GET_REFERENCE_GENOME; GET_REFERENCE_T2T } from './modules/reference'
+include { GET_REFERENCE_REPEATS; GET_REFERENCE_GENOME; GET_REFERENCE_T2T;
+          GET_REFERENCE_REPEATS_T2T; GET_ANNOTATION_T2T;
+          GET_REPEATMASKER_LIB_T2T }        from './modules/reference'
 include { R_PREPARATORY;
           R_GENOTYPING;
           R_ENRICHMENT;
@@ -52,16 +54,29 @@ workflow {
         error "Debes indicar --input (samplesheet CSV) o --fastq_dir"
     }
 
-    // Referencia: usar la proporcionada o descargarla
-     if (params.reference) {
+    // Referencia y recursos según genoma
+    if (params.reference) {
         ch_reference = Channel.value(file(params.reference))
+        ch_repeats   = Channel.value(file('NO_RM_REPEATS'))
+        ch_rm_lib    = Channel.value(file('NO_RM_LIB'))
+        ch_gtf       = Channel.value(file('NO_GTF'))
     } else if (params.genome == "t2t") {
         GET_REFERENCE_T2T()
+        GET_REFERENCE_REPEATS_T2T()
+        GET_ANNOTATION_T2T()
+        GET_REPEATMASKER_LIB_T2T()
         ch_reference = GET_REFERENCE_T2T.out
-        log.info "Modo T2T activado -- forzando modo light (sin anotación)"
+        ch_repeats   = GET_REFERENCE_REPEATS_T2T.out
+        ch_rm_lib    = GET_REPEATMASKER_LIB_T2T.out
+        ch_gtf       = GET_ANNOTATION_T2T.out
+        log.info "Modo T2T activado"
     } else {
         GET_REFERENCE_GENOME()
         ch_reference = GET_REFERENCE_GENOME.out
+        GET_REFERENCE_REPEATS()
+        ch_repeats   = GET_REFERENCE_REPEATS.out
+        ch_rm_lib    = Channel.value(file('NO_RM_LIB'))
+        ch_gtf       = Channel.value(file('NO_GTF'))
     }
 
     // 2. Alineamiento
@@ -100,7 +115,7 @@ workflow {
     MERGE_INTERPATIENT(ch_all_vcfs, ch_all_csis)
 
     // 7. RepeatMasker
-    REPEATMASKER(MERGE_INTERPATIENT.out)
+    REPEATMASKER(MERGE_INTERPATIENT.out, ch_rm_lib)
 
     // 8. Deleciones
     ch_caller_vcfs = CUTESV.out.join(SNIFFLES2.out)
@@ -119,13 +134,12 @@ workflow {
 
     SURVIVOR_INTERPATIENT(ch_del_vcfs, ch_del_csis)
 
-    GET_REFERENCE_REPEATS()
-    GET_DELETIONS(SURVIVOR_INTERPATIENT.out, GET_REFERENCE_REPEATS.out)
+    GET_DELETIONS(SURVIVOR_INTERPATIENT.out, ch_repeats)
 
     // 9. Análisis R (solo en modo full)
     ch_sample_ids = ch_samples.map { sid, fastq -> sid }.collect()
     if (params.mode == "full") {
-        R_PREPARATORY(REPEATMASKER.out, GET_DELETIONS.out, ch_sample_ids)
+        R_PREPARATORY(REPEATMASKER.out, GET_DELETIONS.out, ch_sample_ids, ch_gtf, params.genome)
 
         R_GENOTYPING(
             R_PREPARATORY.out[2],  // insertionsTable

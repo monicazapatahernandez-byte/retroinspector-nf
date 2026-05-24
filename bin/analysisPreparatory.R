@@ -13,20 +13,39 @@ repeatMaskerBedFile    = args[1]
 repeatMaskerVcfDelFile = args[2]
 minReadSupport         = as.integer(args[3])
 allPrefix              = args[4]
-samples                = args[5:length(args)]
+genome                 = args[length(args)]
+gtf_file               = args[length(args) - 1]
+samples                = args[5:(length(args) - 2)]
 # =======================================
 
-annotate = function(tableToAnnotate) {
+annotate = function(tableToAnnotate, genome, gtf_file) {
   print("Building annotation")
   library(annotatr)
   library(AnnotationHub)
-  library("TxDb.Hsapiens.UCSC.hg38.knownGene")
-  annotationNames = builtin_annotations()[
-    stri_detect_fixed(builtin_annotations(), "hg38")
-  ]
-  annotationNames = annotationNames[annotationNames != "hg38_cpg_inter" &
-      annotationNames != "hg38_enhancers_fantom"]
-  annotation = build_annotations(genome = "hg38", annotations = annotationNames)
+
+  if (genome == "t2t") {
+    library(GenomicFeatures)
+    txdb = makeTxDbFromGFF(gtf_file)
+    # Construir anotaciones génicas desde TxDb personalizado
+    introns   = GenomicFeatures::intronicParts(txdb, linked.to.single.gene.only = TRUE)
+    exons     = GenomicFeatures::exonicParts(txdb, linked.to.single.gene.only = TRUE)
+    promoters = GenomicRanges::promoters(GenomicFeatures::genes(txdb), upstream = 1000, downstream = 0)
+    upstream  = GenomicRanges::promoters(GenomicFeatures::genes(txdb), upstream = 5000, downstream = -1000)
+    introns$type   = "hg38_genes_introns"
+    exons$type     = "hg38_genes_exons"
+    promoters$type = "hg38_genes_promoters"
+    upstream$type  = "hg38_genes_1to5kb"
+    annotation = c(introns, exons, promoters, upstream)
+  } else {
+    library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+    annotationNames = builtin_annotations()[
+      stri_detect_fixed(builtin_annotations(), "hg38")
+    ]
+    annotationNames = annotationNames[annotationNames != "hg38_cpg_inter" &
+        annotationNames != "hg38_enhancers_fantom"]
+    annotation = build_annotations(genome = "hg38", annotations = annotationNames)
+  }
+
   annotation = annotation[GenomicRanges::mcols(annotation)$type != "hg38_cpg_inter"]
   saveRDS(annotation, "annotation.rds")
   print("Built annotation")
@@ -163,7 +182,7 @@ repeatMaskerTableMin3 = repeatMaskerTable[SUPP_min3 > 0]
 allIns = repeatMaskerTable
 repeatMaskerTableMin3 = repeatMaskerTableMin3[repeat.percentage >= 0.85 & repeat.class %in% c(class1, class2) & seqnames %in% chrs]
 print("Filtered repeatMaskerTableMin3")
-annotatedInsertionsMin3 = annotate(repeatMaskerTableMin3)
+annotatedInsertionsMin3 = annotate(repeatMaskerTableMin3, genome, gtf_file)
 print("Removed annotation columns from <insertionsTable>")
 saveRDS(annotatedInsertionsMin3, "annotatedInsertionsMin3.rds")
 saveRDS(repeatMaskerTableMin3, "insertionsTable.rds")

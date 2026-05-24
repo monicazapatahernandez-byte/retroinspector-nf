@@ -27,6 +27,7 @@ inputVcf = sys.argv[1]
 outputDir = sys.argv[2]
 species = sys.argv[3]
 threads = int(sys.argv[4])
+lib_path = sys.argv[5] if len(sys.argv) > 5 else ""
 
 fileName = inputVcf[inputVcf.rfind("/") + 1:]
 fileName = fileName[:fileName.rfind(".vcf")] # wont contain a trailing period
@@ -85,9 +86,14 @@ print(len(list(insertions.keys())))
 
 # sys.exit()
 
-repeatMaskerCommand = ["RepeatMasker", "-e", "rmblast", "-species", species, "-no_is",
-    "-pa", str(floor(threads / 4)), # divided by 4 because RepMasker (allegedly) multiplies it by 4
-    outFasta]
+if lib_path:
+    repeatMaskerCommand = ["RepeatMasker", "-e", "rmblast", "-libdir", lib_path, "-species", "human", "-no_is",
+        "-pa", str(floor(threads / 4)),
+        outFasta]
+else:
+    repeatMaskerCommand = ["RepeatMasker", "-e", "rmblast", "-species", species, "-no_is",
+        "-pa", str(floor(threads / 4)),
+        outFasta]
 
 print("Running RepeatMasker")
 
