@@ -71,7 +71,7 @@ params {
 | `--enrichment_pval` | P-valor para enriquecimiento funcional | 0.05 |
 | `--dist_intra` | Distancia máxima para merge intra-muestra (bp) | 60 |
 | `--dist_inter` | Distancia máxima para merge inter-muestra (bp) | 60 |
-| `--comparisons` | Pares de muestras a comparar | [] |
+
 
 ---
 
