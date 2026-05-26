@@ -103,8 +103,8 @@ DSL2 con módulos independientes, lo que facilita la ejecución en entornos HPC
 con SLURM y permite el uso de `-resume` para reanudar ejecuciones interrumpidas.
 
 **Soporte para T2T-CHM13v2.0**
-El pipeline original solo soporta T2T en modo light, sin anotación génica. Esta
-versión implementa el soporte completo en modo full, incorporando los siguientes
+El pipeline original solo soporta HG38. Esta
+versión implementa el soporte completo de T2T tanto en modo full como light, incorporando los siguientes
 recursos específicos de T2T:
 
 - Genoma CHM13v2.0 descargado desde el repositorio público del T2T Consortium
