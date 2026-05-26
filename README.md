@@ -1,134 +1,151 @@
 # RetroInspector-NF
-
-Reimplementacion en Nextflow del pipeline RetroInspector, desarrollada como
-Trabajo de Fin de Master en la Universidad de Murcia. Detecta y caracteriza
-inserciones y deleciones de elementos transponibles (TEs) a partir de datos
-de secuenciacion por nanoporos.
-
-Pipeline original (Snakemake): https://github.com/javiercguard/retroinspector
-
----
-
-## Que hace este pipeline?
-
-Los elementos transponibles son secuencias de ADN que pueden moverse por el
-genoma. Suponen el 45% del genoma humano y tienen implicaciones en
-enfermedades, regulacion genica y variabilidad genetica. Detectarlos con
-nanoporos es mas preciso que con lecturas cortas.
-
-El pipeline recibe FASTQs de nanopore y un genoma de referencia, y produce
-un informe HTML con las inserciones y deleciones de TEs, su anotacion genica
-y analisis de enriquecimiento.
-
----
-
-## Pasos del pipeline
-
-  1. Alineamiento        Minimap2 contra el genoma de referencia
-  2. Variant calling     CuteSV y Sniffles2 en paralelo
-  3. Ensamblaje          Reconstruccion de la secuencia insertada
-  4. Merge intra-muestra Fusion de llamadas de ambos callers por muestra
-  5. Genotyping          Cobertura con Mosdepth y calculo de genotipos
-  6. Merge inter-muestra Fusion de todas las muestras
-  7. RepeatMasker        Identificacion de TEs y deteccion de SVA F1 con BLAST
-  8. Deleciones          Deteccion de deleciones de TE frente al genoma
-  9. Analisis R          Anotacion, enriquecimiento e informe HTML
-
-El paso 9 solo se ejecuta en modo full (por defecto). En modo light se omite
-la anotacion, permitiendo usar genomas alternativos como T2T.
-
----
+Reimplementación en Nextflow DSL2 de [RetroInspector](https://github.com/javiercguard/retroinspector), un pipeline para 
+la detección y caracterización de inserciones y deleciones de elementos transponibles (TEs) a partir de datos de 
+secuenciación nanopore. Desarrollado como Trabajo de Fin de Máster en la Universidad de Murcia. Soporta los genomas de 
+referencia **hg38** (GRCh38) y **T2T-CHM13v2.0**, con descarga automática de todos los recursos necesarios. ---
+## Requisitos
+- Nextflow >= 22.10 
+- Conda o Mamba 
+- Acceso a internet desde los nodos de cómputo (para descarga de recursos) 
+- Más de 600 
+GB de espacio en disco para una ejecución completa con T2T 
 
 ## Uso
+Prepara un samplesheet CSV con tus muestras: 
+sample_id,fastq 
+HG00514,/ruta/HG00514.fastq.gz 
+NA19240,/ruta/NA19240.fastq.gz 
+...
 
-Formato del samplesheet (CSV):
+Ejecuta con hg38 (descarga automática):
 
-  sample_id,fastq
-  HG00514,/ruta/HG00514.fastq.gz
-  HG00733,/ruta/HG00733.fastq.gz
-  NA19240,/ruta/NA19240.fastq.gz
+```bash
+nextflow run main.nf \
+    --input samplesheet.csv \
+    --genome hg38 \
+    --outdir resultados \
+    -profile dayhoff
+```
 
-Con genoma propio:
+Ejecuta con T2T-CHM13v2.0:
 
-  nextflow run main.nf \
-      --input samplesheet.csv \
-      --reference /ruta/hg38.fa \
-      --outdir resultados \
-      -profile dayhoff
+```bash
+nextflow run main.nf \
+    --input samplesheet.csv \
+    --genome t2t \
+    --outdir resultados \
+    -profile dayhoff
+```
 
-Con descarga automatica de hg38:
+Con tu propio genoma de referencia (sin anotación génica):
 
-  nextflow run main.nf \
-      --input samplesheet.csv \
-      --genome hg38 \
-      --outdir resultados \
-      -profile dayhoff
+```bash
+nextflow run main.nf \
+    --input samplesheet.csv \
+    --reference /ruta/genoma.fa \
+    --outdir resultados \
+    -profile dayhoff
+```
 
-Con genoma T2T (modo light, sin anotacion):
+Para comparar pares de muestras, añade en `nextflow.config`:
 
-  nextflow run main.nf \
-      --input samplesheet.csv \
-      --genome t2t \
-      --outdir resultados \
-      -profile dayhoff
-
----
-
-## Parametros principales
-
-  --input              Samplesheet CSV                         (null)
-  --reference          Genoma de referencia propio             (null)
-  --genome             Genoma a descargar: hg38 o t2t          (hg38)
-  --outdir             Carpeta de resultados                   (results)
-  --mode               full o light                            (full)
-  --min_read_support   Lecturas minimas para aceptar variante  (3)
-  --threads            Hilos de procesamiento                  (32)
-  --all_prefix         Prefijo de ficheros de salida           (all)
-  --enrichment_pval    P-valor para enriquecimiento            (0.05)
-  --dist_intra         Distancia merge intra-muestra (bp)      (60)
-  --dist_inter         Distancia merge inter-muestra (bp)      (60)
-  --comparisons        Pares de muestras a comparar            ([])
-
-Para comparar muestras, añadir en nextflow.config:
-
-  params {
-      comparisons = [["HG00514", "NA19240"]]
-  }
+```groovy
+params {
+    comparisons = [["HG00514", "NA19240"]]
+}
+```
 
 ---
 
-## Resultados
+## Parámetros
 
-  results/
-  |-- alns/          Alineamientos BAM
-  |-- variants/      VCFs por muestra y conjuntos finales
-  |-- repeatmasker/  Anotacion RepeatMasker con SVA F1
-  |-- rds/           Objetos R intermedios
-  |-- reports/
-      |-- report.all.html            Informe principal
-      |-- MUESTRA1_vs_MUESTRA2.html  Informe de comparacion
+| Parámetro | Descripción | Por defecto |
+|-----------|-------------|-------------|
+| `--input` | Samplesheet CSV | null |
+| `--reference` | Genoma de referencia propio | null |
+| `--genome` | Genoma a descargar: `hg38` o `t2t` | hg38 |
+| `--outdir` | Carpeta de resultados | results |
+| `--mode` | `full` (con anotación) o `light` (sin anotación) | full |
+| `--min_read_support` | Lecturas mínimas para aceptar una variante | 3 |
+| `--threads` | Hilos de procesamiento | 32 |
+| `--enrichment_pval` | P-valor para enriquecimiento funcional | 0.05 |
+| `--dist_intra` | Distancia máxima para merge intra-muestra (bp) | 60 |
+| `--dist_inter` | Distancia máxima para merge inter-muestra (bp) | 60 |
+| `--comparisons` | Pares de muestras a comparar | [] |
 
-El informe HTML incluye:
-  - Estadisticas de filtrado (criterio lax y strict)
-  - Benchmark de genotyping (falsos positivos y negativos)
-  - Distribucion genomica de inserciones y deleciones
-  - Clasificacion por familia de TE (SVA, Alu, L1 detallados)
-  - Manhattan plots de frecuencias alelicas
-  - Analisis de enriquecimiento (GO, Disease Ontology, NCG)
+---
+
+## Salidas
+
+results/
+ ├── alns/ BAMs indexados por muestra
+ ├── variants/ VCFs por caller, por muestra y conjuntos finales lax y strict
+ ├── repeatmasker/ BED con familia de TE anotada, incluyendo SVA F1
+ ├── rds/ Objetos R intermedios
+ └── reports/ 
+ ├── report.all.html Informe principal
+ └── MUESTRA1_vs_MUESTRA2.html 
+
+El informe HTML incluye estadísticas de filtrado, benchmark de genotyping,
+distribución genómica de inserciones y deleciones, clasificación por familia
+de TE, Manhattan plots de frecuencias alélicas, hallmarks de retrotransposición
+(cola polyA y motivo de endonucleasa L1) y análisis de enriquecimiento funcional
+(Gene Ontology, Disease Ontology y Network of Cancer Genes).
 
 ---
 
 ## Diferencias respecto al pipeline original
 
-  - Reimplementado completamente en Nextflow DSL2
-  - Scripts R migrados de API Snakemake a parametros de rmarkdown
-  - Deteccion de SVA F1 integrada en el proceso RepeatMasker
-  - Soporte para comparacion entre pares de muestras (R_COMPARE)
-  - Soporte para genoma T2T en modo light
+Esta reimplementación introduce las siguientes diferencias respecto al original.
+
+El pipeline original está implementado en Snakemake. Esta versión usa Nextflow
+DSL2 con módulos independientes, lo que facilita la ejecución en entornos HPC
+con SLURM y permite el uso de `-resume` para reanudar ejecuciones interrumpidas.
+
+**Soporte para T2T-CHM13v2.0**
+El pipeline original solo soporta T2T en modo light, sin anotación génica. Esta
+versión implementa el soporte completo en modo full, incorporando los siguientes
+recursos específicos de T2T:
+
+- Genoma CHM13v2.0 descargado desde el repositorio público del T2T Consortium
+- BED de repeticiones chm13v2.0_RepeatMasker_4.1.2p1.2022Apr14.bed del mismo
+  consorcio, con ordenación y reindexado previos con tabix --csi
+- GTF de anotación génica hs1.ncbiRefSeq.gtf descargado desde UCSC
+- Librería RepeatMasker construida con RepeatMasker 4.1.9 combinando la base
+  de Dfam con el fichero humanAutoXYape.embl de Jessica Storer
+  (github.com/jessicaStorer88/RepeatMasker_library_CHM13) más la partición 7
+  de Dfam 3.9 (Mammalia), necesaria para detectar LINE, LTR y SVA
+- Anotación génica construida desde el GTF con makeTxDbFromGFF de
+  GenomicFeatures, dado que annotatr no tiene soporte nativo para CHM13
+
+**Módulo HALLMARKS integrado**
+En el pipeline original los hallmarks de retrotransposición son un análisis
+independiente. Aquí están integrados como proceso Nextflow automático entre
+R_GENOTYPING y R_REPORT, usando pysam y RapidFuzz.
+
+**Migración de scripts**
+Todos los scripts R han sido migrados de la API Snakemake (snakemake@input,
+snakemake@output, snakemake@params) a commandArgs y parámetros de rmarkdown.
+Los scripts Python han sido migrados de la API Snakemake a sys.argv.
+
+**Otros cambios**
+- Detección automática del formato BED CHM13 vs hg38 en getMeDeletions.py
+- Manejo robusto de VCFs vacíos en assembly_alleles y merge
+- Perfil de ejecución SLURM para el servidor dayhoff (cola eck-q)
 
 ---
 
-## Autor
+## Cita
 
-Monica Zapata Hernandez
+El trabajo en el que se basa:
 
+Cuenca-Guardiola J, de la Morena-Barrio B, Corral J, Fernández-Breis JT.
+Advanced analysis of retrotransposon variation in the human genome with
+nanopore sequencing using RetroInspector. Scientific Reports. 2025;15:14489.
+https://doi.org/10.1038/s41598-025-98847-7
+
+---
+
+
+Mónica Zapata Hernández
+Máster Universitario en Bioinformática, UMU
