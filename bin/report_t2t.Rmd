@@ -952,7 +952,12 @@ for (x in c("MF", "BP", "CC")) {
       "geneID" = NULL,
       GeneRatioCalc = GeneRatio %>% lapply(function (x) str2expression(x) %>% eval()) %>% unlist()
     )] %>% assign(dtName, ., envir = .GlobalEnv)
-  dt = get(dtName)[pvalue <= pLimit]
+  dt = get(dtName)[p.adjust <= pLimit]
+  if (nrow(dt) == 0) {
+    cat("No significant results were found for this group.\n\n")
+    next()
+  }
+  object@result = object@result[object@result$p.adjust <= pLimit, ]
   barplot(object, showCategory = 12, font.size = 10, title = paste0("GO - ", x)) %>% print()
   topN = min(nrow(dt), 10)
   cat("\n\nThe category with lowest p value is *", dt[order(p.adjust)][1, Description],

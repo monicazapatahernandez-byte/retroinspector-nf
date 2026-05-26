@@ -22,3 +22,5 @@ results_HG00514/
 input_data/
 data/repeatsReferenceTE.bed.gz
 data/repeatsReferenceTE.bed.gz.csi
+work_t2t/
+results_3muestras_t2t/

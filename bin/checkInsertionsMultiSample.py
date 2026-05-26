@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 # Should be run with python >= 3.6
-import sys, gzip, subprocess
+import sys, gzip, subprocess, os
 from math import floor
 
 def getInfoValue (infoField, fieldName):

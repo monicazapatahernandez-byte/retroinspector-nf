@@ -27,14 +27,24 @@ annotate = function(tableToAnnotate, genome, gtf_file) {
     library(GenomicFeatures)
     txdb = makeTxDbFromGFF(gtf_file)
     # Construir anotaciones génicas desde TxDb personalizado
-    introns   = GenomicFeatures::intronicParts(txdb, linked.to.single.gene.only = TRUE)
-    exons     = GenomicFeatures::exonicParts(txdb, linked.to.single.gene.only = TRUE)
-    promoters = GenomicRanges::promoters(GenomicFeatures::genes(txdb), upstream = 1000, downstream = 0)
-    upstream  = GenomicRanges::promoters(GenomicFeatures::genes(txdb), upstream = 5000, downstream = -1000)
+    introns   = GenomicRanges::granges(GenomicFeatures::intronicParts(txdb, linked.to.single.gene.only = FALSE))
+    exons     = GenomicRanges::granges(GenomicFeatures::exonicParts(txdb, linked.to.single.gene.only = FALSE))
+    promoters = GenomicRanges::promoters(GenomicFeatures::genes(txdb), upstream = 1000L, downstream = 0L)
+    upstream  = GenomicRanges::flank(GenomicFeatures::genes(txdb), width = 4000L, start = TRUE, both = FALSE)
+    upstream  = GenomicRanges::trim(GenomicRanges::resize(upstream, width = GenomicRanges::width(upstream) + 1000L, fix = "end"))
     introns$type   = "hg38_genes_introns"
     exons$type     = "hg38_genes_exons"
     promoters$type = "hg38_genes_promoters"
     upstream$type  = "hg38_genes_1to5kb"
+    names(introns)   = NULL
+    names(exons)     = NULL
+    names(promoters) = NULL
+    names(upstream)  = NULL
+    gene_ids = names(GenomicFeatures::genes(txdb))
+    introns$symbol   = NA_character_
+    exons$symbol     = NA_character_
+    promoters$symbol = gene_ids
+    upstream$symbol  = gene_ids
     annotation = c(introns, exons, promoters, upstream)
   } else {
     library("TxDb.Hsapiens.UCSC.hg38.knownGene")
