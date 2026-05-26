@@ -4,7 +4,7 @@ la detección y caracterización de inserciones y deleciones de elementos transp
 secuenciación nanopore. Desarrollado como Trabajo de Fin de Máster en la Universidad de Murcia. Soporta los genomas de 
 referencia **hg38** (GRCh38) y **T2T-CHM13v2.0**, con descarga automática de todos los recursos necesarios. ---
 ## Requisitos
-- Nextflow >= 22.10 
+- Nextflow 
 - Conda o Mamba 
 - Acceso a internet desde los nodos de cómputo (para descarga de recursos) 
 - Más de 600 
