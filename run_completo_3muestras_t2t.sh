@@ -5,8 +5,18 @@
 #SBATCH --time=24:00:00
 #SBATCH --partition=eck-q
 
+
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /home/alumno27/miniconda3/envs/nf-core
+
+export PATH="/home/alumno27/miniforge3/bin:$PATH"
+
+echo "=== Comprobación entorno ==="
+echo "CONDA_PREFIX=$CONDA_PREFIX"
+which nextflow
+nextflow -version
+which mamba
+mamba --version
 
 DATA_DIR=/home/alumno27/tfm/retroinspector-nf/input_data
 PIPE_DIR=/home/alumno27/tfm/retroinspector-nf
@@ -94,6 +104,7 @@ cd "$PIPE_DIR"
 /home/alumno27/miniconda3/envs/nf-core/bin/nextflow run main.nf \
     --input test_data/samplesheet.csv \
     --genome t2t \
+    --mode full \
     --outdir results_3muestras_t2t \
     --threads 32 \
     -profile dayhoff \
