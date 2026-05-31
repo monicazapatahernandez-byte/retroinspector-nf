@@ -18,7 +18,8 @@ include { SURVIVOR_INTRAPATIENT;
           GET_DELETIONS }            from './modules/deletions'
 include { GET_REFERENCE_REPEATS; GET_REFERENCE_GENOME; GET_REFERENCE_T2T;
           GET_REFERENCE_REPEATS_T2T; GET_ANNOTATION_T2T;
-          GET_REPEATMASKER_LIB_T2T }        from './modules/reference'
+          GET_REPEATMASKER_LIB_T2T; PREPARE_TE_NOOVERLAP;
+          PREPARE_TE_NOOVERLAP_T2T }        from './modules/reference'
 include { R_PREPARATORY;
           R_GENOTYPING;
           R_ENRICHMENT;
@@ -54,27 +55,36 @@ workflow {
         error "Debes indicar --input (samplesheet CSV) o --fastq_dir"
     }
 
-    // Referencia y recursos según genoma
-    if (params.reference) {
-        ch_reference = Channel.value(file(params.reference))
-        ch_repeats   = Channel.value(file('NO_RM_REPEATS'))
-        ch_rm_lib    = Channel.value(file('NO_RM_LIB'))
-        ch_gtf       = Channel.value(file('NO_GTF'))
-    } else if (params.genome == "t2t") {
-        GET_REFERENCE_T2T()
+    if (params.genome == "t2t") {
+        if (params.reference) {
+            ch_reference = Channel.value(file(params.reference, checkIfExists: true))
+        } else {
+            GET_REFERENCE_T2T()
+            ch_reference = GET_REFERENCE_T2T.out
+        }
+
         GET_REFERENCE_REPEATS_T2T()
+        PREPARE_TE_NOOVERLAP_T2T(GET_REFERENCE_REPEATS_T2T.out)
         GET_ANNOTATION_T2T()
         GET_REPEATMASKER_LIB_T2T()
-        ch_reference = GET_REFERENCE_T2T.out
-        ch_repeats   = GET_REFERENCE_REPEATS_T2T.out
+
+        ch_repeats   = PREPARE_TE_NOOVERLAP_T2T.out
         ch_rm_lib    = GET_REPEATMASKER_LIB_T2T.out
         ch_gtf       = GET_ANNOTATION_T2T.out
+
         log.info "Modo T2T activado"
     } else {
-        GET_REFERENCE_GENOME()
-        ch_reference = GET_REFERENCE_GENOME.out
+        if (params.reference) {
+            ch_reference = Channel.value(file(params.reference, checkIfExists: true))
+        } else {
+            GET_REFERENCE_GENOME()
+            ch_reference = GET_REFERENCE_GENOME.out
+        }
+
         GET_REFERENCE_REPEATS()
-        ch_repeats   = GET_REFERENCE_REPEATS.out
+        PREPARE_TE_NOOVERLAP(GET_REFERENCE_REPEATS.out)
+
+        ch_repeats   = PREPARE_TE_NOOVERLAP.out
         ch_rm_lib    = Channel.value(file('NO_RM_LIB'))
         ch_gtf       = Channel.value(file('NO_GTF'))
     }
