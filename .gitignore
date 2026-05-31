@@ -24,3 +24,4 @@ data/repeatsReferenceTE.bed.gz
 data/repeatsReferenceTE.bed.gz.csi
 work_t2t/
 results_3muestras_t2t/
+.conda_envs
