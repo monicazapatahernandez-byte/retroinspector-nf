@@ -17,7 +17,7 @@ process REPEATMASKER {
     """
     mkdir -p repeatmasker
 
-    python3 ${projectDir}/bin/checkInsertionsMultiSample.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/checkInsertionsMultiSample.py \
         ${vcf} \
         repeatmasker \
         ${params.species} \
@@ -25,7 +25,7 @@ process REPEATMASKER {
         ${lib_arg}
 
     # Buscar elementos SVA F1
-    python3 ${projectDir}/bin/svaf.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/svaf.py \
         repeatmasker/${params.all_prefix}.merged.rm.unproc.bed \
         ${projectDir}/data/sva_types.fa \
         ${params.all_prefix}.merged.rm.bed

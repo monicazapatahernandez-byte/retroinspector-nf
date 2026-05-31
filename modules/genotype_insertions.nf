@@ -10,7 +10,7 @@ process MOSDEPTH_INS {
 
     script:
     """
-    python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
         ${vcf} ${sample_id}.ins.bed
 
     mosdepth \
@@ -36,7 +36,7 @@ process GENOTYPE_INS {
 
     script:
     """
-    python3 ${projectDir}/bin/genotype.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/genotype.py \
         ${coverage} \
         ${vcf} \
         ${sample_id}.merged.both.vcf

@@ -14,7 +14,7 @@ process HALLMARKS {
     """
     samtools faidx ${reference}
 
-    python3 ${projectDir}/bin/hallmarks.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/hallmarks.py \
         --input     ${hallmarks_input} \
         --reference ${reference} \
         --output    hallmarks.tsv

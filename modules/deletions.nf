@@ -30,7 +30,7 @@ process MOSDEPTH_DEL {
 
     script:
     """
-    python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
         --svtype DEL \
         ${vcf} ${sample_id}.del.bed
 
@@ -57,7 +57,7 @@ process GENOTYPE_DEL {
 
     script:
     """
-    python3 ${projectDir}/bin/genotype.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/genotype.py \
         --svtype DEL \
         ${coverage} \
         ${vcf} \
@@ -89,7 +89,7 @@ process SURVIVOR_INTERPATIENT {
         ${params.survivor_inter} 1 1 -1 -1 1 \
         ${params.all_prefix}.merged.survivor.vcf
     cat ${params.all_prefix}.merged.survivor.vcf | \
-        python3 ${projectDir}/bin/fixVCF.py | \
+        ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/fixVCF.py | \
         bcftools sort -O z \
         -o ${params.all_prefix}.merged.survivor.vcf.gz
     bcftools index ${params.all_prefix}.merged.survivor.vcf.gz
@@ -110,7 +110,7 @@ process GET_DELETIONS {
 
     script:
     """
-    python3 ${projectDir}/bin/getMeDeletions.py \
+    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/getMeDeletions.py \
         ${vcf} \
         ${bed} \
         ${params.all_prefix}.me.deletions.temp.vcf.gz
