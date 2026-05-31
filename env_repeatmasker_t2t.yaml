@@ -2,6 +2,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  - h5py
   - repeatmasker=4.1.9
   - rmblast=2.14.1
   - wget=1.20.3
