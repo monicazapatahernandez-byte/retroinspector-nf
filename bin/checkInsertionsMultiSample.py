@@ -35,7 +35,6 @@ outFasta = f"{outputDir}/{fileName}.fa"
 rmOut = f"{outputDir}/{fileName}.fa.out"
 insBed = f"{outputDir}/{fileName}.rm.unproc.bed"
 
-threads = 16
 
 insertions = {} # dict of dicts
 
