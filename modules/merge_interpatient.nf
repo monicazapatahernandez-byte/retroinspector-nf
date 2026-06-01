@@ -12,7 +12,7 @@ process MERGE_INTERPATIENT {
 
     script:
     """
-    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/merge.py \
+    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/merge.py \
         -samples ${vcfs.collect { it.simpleName }.join(' ')} \
         -vcf ${vcfs} \
         -o ${params.all_prefix}.merged.vcf \
