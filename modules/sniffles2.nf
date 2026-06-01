@@ -34,7 +34,7 @@ process SNIFFLES2 {
     gawk -v 'OFS=\t' \
     '{if (substr(\$0,1,1)=="#") {sub(/SUPPORT,/,"RE,",\$0);print} \
     else {sub(/SUPPORT=/,"RE=",\$8);print}}' | \
-    ${CONDA_PREFIX}/bin/python3 ${fixScript} | \
+    \${CONDA_PREFIX}/bin/python3 ${fixScript} | \
     bcftools sort -O z -o ${sample_id}.sniffles2.vcf.gz
 
     bcftools index ${sample_id}.sniffles2.vcf.gz
