@@ -1,5 +1,6 @@
 process GET_REFERENCE_REPEATS {
     conda "${projectDir}/env.yaml"
+    executor 'local'   
     storeDir "${params.outdir}/data"
 
     output:
@@ -105,6 +106,9 @@ process GET_REPEATMASKER_LIB_T2T {
     """
 }
 
+
+
+
 process PREPARE_TE_NOOVERLAP {
     conda "${projectDir}/env.yaml"
     storeDir "${params.outdir}/data"
@@ -142,5 +146,23 @@ process PREPARE_TE_NOOVERLAP_T2T {
 
     bgzip -k repeatsReferenceTENoOverlap_t2t.bed
     tabix -p bed --csi repeatsReferenceTENoOverlap_t2t.bed.gz
+    """
+}
+
+
+process GET_DFAM_PARTITION7 {
+    conda "${projectDir}/env_repeatmasker_t2t.yaml"
+    executor 'local'
+    storeDir "${params.outdir}/dfam"
+
+    output:
+    path "dfam39_full.7.h5"
+
+    script:
+    """
+    wget -q --show-progress \
+        https://www.dfam.org/releases/current/families/FamDB/dfam39_full.7.h5.gz
+
+    gunzip dfam39_full.7.h5.gz
     """
 }
