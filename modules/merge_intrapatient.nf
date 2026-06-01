@@ -10,7 +10,7 @@ process MERGE_INTRAPATIENT {
 
     script:
     """
-    ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/merge.py \
+    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/merge.py \
         -samples ${params.callers.tokenize(',').join(' ')}  \
         -vcf ${vcfs} \
         -o ${sample_id}.merged.both.ungenotyped.vcf \
