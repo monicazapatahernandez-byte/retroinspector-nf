@@ -39,7 +39,7 @@ process CUTESV {
     '{if (substr(\$0,1,1)=="#") {print} \
     else { match(\$8,/RE=([0-9]+)/,a); \
       if (a[1]+0 >= ${params.min_read_support}) {print} }}' | \
-    ${CONDA_PREFIX}/bin/python3 ${fixScript} | \
+    \${CONDA_PREFIX}/bin/python3 ${fixScript} | \
     bcftools sort -O z -o ${sample_id}.cutesv.vcf.gz
 
     bcftools index ${sample_id}.cutesv.vcf.gz
