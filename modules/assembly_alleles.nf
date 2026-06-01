@@ -19,7 +19,7 @@ process ASSEMBLY_ALLELES {
         echo "AVISO: VCF vacío, generando salida vacía válida"
         zcat ${vcf} | grep "^#" > ${sample_id}.${caller}.polished.vcf
     else
-        ${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/getGoodAlts.py \
+        \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/getGoodAlts.py \
             ${vcf} \
             ${bam} \
             ${sample_id}.${caller}.polished.vcf \
