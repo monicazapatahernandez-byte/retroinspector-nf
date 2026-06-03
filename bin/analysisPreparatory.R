@@ -23,29 +23,52 @@ annotate = function(tableToAnnotate, genome, gtf_file) {
   library(annotatr)
   library(AnnotationHub)
 
-  if (genome == "t2t") {
+   if (genome == "t2t") {
     library(GenomicFeatures)
+    library(AnnotationDbi)
     txdb = makeTxDbFromGFF(gtf_file)
-    # Construir anotaciones génicas desde TxDb personalizado
-    introns   = GenomicRanges::granges(GenomicFeatures::intronicParts(txdb, linked.to.single.gene.only = FALSE))
-    exons     = GenomicRanges::granges(GenomicFeatures::exonicParts(txdb, linked.to.single.gene.only = FALSE))
-    promoters = GenomicRanges::promoters(GenomicFeatures::genes(txdb), upstream = 1000L, downstream = 0L)
-    upstream  = GenomicRanges::flank(GenomicFeatures::genes(txdb), width = 4000L, start = TRUE, both = FALSE)
+
+    # Mapa transcrito → gen para enlazar las categorías por transcrito
+    tx2gene = AnnotationDbi::select(
+      txdb,
+      keys    = keys(txdb, "TXNAME"),
+      columns = c("TXNAME", "GENEID"),
+      keytype = "TXNAME"
+    )
+    tx2gene_v = setNames(tx2gene$GENEID, tx2gene$TXNAME)
+
+    attach_gene = function(gr) {
+      gr$symbol = tx2gene_v[names(gr)]
+      names(gr) = NULL
+      gr[!is.na(gr$symbol)]   # descarta tx sin gen mapeado
+    }
+
+ 
+    introns   = attach_gene(unlist(GenomicFeatures::intronsByTranscript(txdb, use.names = TRUE)))
+    exons     = attach_gene(unlist(GenomicFeatures::exonsBy(txdb, by = "tx", use.names = TRUE)))
+    fiveUTRs  = attach_gene(unlist(GenomicFeatures::fiveUTRsByTranscript(txdb, use.names = TRUE)))
+    threeUTRs = attach_gene(unlist(GenomicFeatures::threeUTRsByTranscript(txdb, use.names = TRUE)))
+
+  
+    gene_gr   = GenomicFeatures::genes(txdb)
+    gene_ids  = names(gene_gr)
+    promoters = GenomicRanges::promoters(gene_gr, upstream = 1000L, downstream = 0L)
+    upstream  = GenomicRanges::flank(gene_gr, width = 4000L, start = TRUE, both = FALSE)
     upstream  = GenomicRanges::trim(GenomicRanges::resize(upstream, width = GenomicRanges::width(upstream) + 1000L, fix = "end"))
-    introns$type   = "hg38_genes_introns"
-    exons$type     = "hg38_genes_exons"
-    promoters$type = "hg38_genes_promoters"
-    upstream$type  = "hg38_genes_1to5kb"
-    names(introns)   = NULL
-    names(exons)     = NULL
-    names(promoters) = NULL
-    names(upstream)  = NULL
-    gene_ids = names(GenomicFeatures::genes(txdb))
-    introns$symbol   = NA_character_
-    exons$symbol     = NA_character_
     promoters$symbol = gene_ids
     upstream$symbol  = gene_ids
-    annotation = c(introns, exons, promoters, upstream)
+    names(promoters) = NULL
+    names(upstream)  = NULL
+
+    
+    introns$type   = "hg38_genes_introns"
+    exons$type     = "hg38_genes_exons"
+    fiveUTRs$type  = "hg38_genes_5UTRs"
+    threeUTRs$type = "hg38_genes_3UTRs"
+    promoters$type = "hg38_genes_promoters"
+    upstream$type  = "hg38_genes_1to5kb"
+
+    annotation = c(introns, exons, fiveUTRs, threeUTRs, promoters, upstream)
   } else {
     library("TxDb.Hsapiens.UCSC.hg38.knownGene")
     annotationNames = builtin_annotations()[
