@@ -11,7 +11,9 @@ process SVA_F1 {
 
     script:
     """
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/svaf.py \
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
+    /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/svaf.py \
         ${rm_bed} \
         rm_svaf1.bed \
         svaf.fasta \

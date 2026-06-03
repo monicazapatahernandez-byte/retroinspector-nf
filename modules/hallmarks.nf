@@ -12,9 +12,11 @@ process HALLMARKS {
 
     script:
     """
-    samtools faidx ${reference}
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
 
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/hallmarks.py \
+    /opt/conda/envs/retro-base/bin/samtools faidx ${reference}
+
+    /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/hallmarks.py \
         --input     ${hallmarks_input} \
         --reference ${reference} \
         --output    hallmarks.tsv

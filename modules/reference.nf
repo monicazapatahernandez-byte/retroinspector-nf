@@ -156,13 +156,22 @@ process GET_DFAM_PARTITION7 {
     storeDir "${params.outdir}/dfam"
 
     output:
-    path "dfam39_full.7.h5"
+    path "dfam40*.h5"
 
     script:
     """
-    wget -q --show-progress \
-        https://www.dfam.org/releases/current/families/FamDB/dfam39_full.7.h5.gz
+    wget https://www.dfam.org/releases/current/families/FamDB/dfam40.0.h5.gz
 
-    gunzip dfam39_full.7.h5.gz
+    wget https://www.dfam.org/releases/current/families/FamDB/dfam40.curated.hmm.0.h5.gz
+
+    wget https://www.dfam.org/releases/current/families/FamDB/dfam40.curated.hmm.1.h5.gz
+
+    gzip -t dfam40.0.h5.gz
+    gzip -t dfam40.curated.hmm.0.h5.gz
+    gzip -t dfam40.curated.hmm.1.h5.gz
+
+    gunzip -f dfam40.0.h5.gz
+    gunzip -f dfam40.curated.hmm.0.h5.gz
+    gunzip -f dfam40.curated.hmm.1.h5.gz
     """
 }
