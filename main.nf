@@ -69,10 +69,10 @@ workflow {
         GET_REPEATMASKER_LIB_T2T()
         GET_DFAM_PARTITION7()
 
-        ch_repeats   = GET_REFERENCE_REPEATS_T2T.out
-        ch_rm_lib    = GET_REPEATMASKER_LIB_T2T.out
-        ch_gtf       = GET_ANNOTATION_T2T.out
-        ch_dfam7     = GET_DFAM_PARTITION7.out
+        ch_repeats        = GET_REFERENCE_REPEATS_T2T.out
+        ch_rm_lib         = GET_REPEATMASKER_LIB_T2T.out
+        ch_gtf            = GET_ANNOTATION_T2T.out
+        ch_dfam_files     = GET_DFAM_PARTITION7.out
 
         log.info "Modo T2T activado"
     } else {
@@ -86,10 +86,10 @@ workflow {
         GET_REFERENCE_REPEATS()
         PREPARE_TE_NOOVERLAP(GET_REFERENCE_REPEATS.out)
 
-        ch_repeats   = PREPARE_TE_NOOVERLAP.out
-        ch_rm_lib    = Channel.value(file('NO_RM_LIB'))
-        ch_gtf       = Channel.value(file('NO_GTF'))
-        ch_dfam7     = Channel.value(file('NO_DFAM7'))
+        ch_repeats        = PREPARE_TE_NOOVERLAP.out
+        ch_rm_lib         = Channel.value(file('NO_RM_LIB'))
+        ch_gtf            = Channel.value(file('NO_GTF'))
+        ch_dfam_files     = Channel.value(file('NO_DFAM7'))
     }
 
     // 2. Alineamiento
@@ -128,7 +128,7 @@ workflow {
     MERGE_INTERPATIENT(ch_all_vcfs, ch_all_csis)
 
     // 7. RepeatMasker
-    REPEATMASKER(MERGE_INTERPATIENT.out, ch_rm_lib, ch_dfam7)
+    REPEATMASKER(MERGE_INTERPATIENT.out, ch_rm_lib, ch_dfam_files)
 
     // 8. Deleciones
     ch_caller_vcfs = CUTESV.out.join(SNIFFLES2.out)
