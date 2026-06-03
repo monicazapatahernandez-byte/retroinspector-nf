@@ -25,3 +25,8 @@ data/repeatsReferenceTE.bed.gz.csi
 work_t2t/
 results_3muestras_t2t/
 .conda_envs
+env_FROZEN.yaml.bak
+r_FROZEN.yaml.bak
+results_docker/
+work_docker/
+
