@@ -10,10 +10,12 @@ process MOSDEPTH_INS {
 
     script:
     """
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
+    /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
         ${vcf} ${sample_id}.ins.bed
 
-    mosdepth \
+    /opt/conda/envs/retro-base/bin/mosdepth \
         -t ${task.cpus} \
         -Q 20 -n \
         -b ${sample_id}.ins.bed \
@@ -36,7 +38,9 @@ process GENOTYPE_INS {
 
     script:
     """
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/genotype.py \
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
+    /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/genotype.py \
         ${coverage} \
         ${vcf} \
         ${sample_id}.merged.both.vcf

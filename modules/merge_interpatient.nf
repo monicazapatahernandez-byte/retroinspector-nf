@@ -11,16 +11,18 @@ process MERGE_INTERPATIENT {
     tuple path("${params.all_prefix}.merged.vcf.gz"), path("${params.all_prefix}.merged.vcf.gz.csi")
 
     script:
-    """
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/merge.py \
-        -samples ${vcfs.collect { it.simpleName }.join(' ')} \
-        -vcf ${vcfs} \
-        -o ${params.all_prefix}.merged.vcf \
-        -d ${params.dist_inter}
+"""
+export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
 
-    bcftools sort ${params.all_prefix}.merged.vcf \
-        -O z -o ${params.all_prefix}.merged.vcf.gz
+/opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/merge.py \
+    -samples ${vcfs.collect { it.simpleName }.join(' ')} \
+    -vcf ${vcfs} \
+    -o ${params.all_prefix}.merged.vcf \
+    -d ${params.dist_inter}
 
-    bcftools index ${params.all_prefix}.merged.vcf.gz
-    """
+bcftools sort ${params.all_prefix}.merged.vcf \
+    -O z -o ${params.all_prefix}.merged.vcf.gz
+
+bcftools index ${params.all_prefix}.merged.vcf.gz
+"""
 }
