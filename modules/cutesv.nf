@@ -11,12 +11,15 @@ process CUTESV {
     output:
     tuple val(sample_id), path("${sample_id}.cutesv.vcf.gz"), path("${sample_id}.cutesv.vcf.gz.csi")
 
-    script:
+        script:
     def fixScript = "${projectDir}/bin/fixVCF.py"
     """
-    mkdir -p tmp_cutesv
+    BASE_ENV="/opt/conda/envs/retro-base"
+    export PATH="\${BASE_ENV}/bin:\${PATH}"
 
-    cuteSV \
+       mkdir -p tmp_cutesv
+
+    \${BASE_ENV}/bin/cuteSV \
         -t ${task.cpus} \
         --max_cluster_bias_INS 100 \
         -s 2 -L -1 \
@@ -39,7 +42,7 @@ process CUTESV {
     '{if (substr(\$0,1,1)=="#") {print} \
     else { match(\$8,/RE=([0-9]+)/,a); \
       if (a[1]+0 >= ${params.min_read_support}) {print} }}' | \
-    \${CONDA_PREFIX}/bin/python3 ${fixScript} | \
+    \${BASE_ENV}/bin/python3 ${fixScript} | \
     bcftools sort -O z -o ${sample_id}.cutesv.vcf.gz
 
     bcftools index ${sample_id}.cutesv.vcf.gz

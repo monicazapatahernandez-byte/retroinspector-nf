@@ -14,7 +14,11 @@ process SNIFFLES2 {
     script:
     def fixScript = "${projectDir}/bin/fixVCF.py"
     """
-    sniffles \
+         SNIFFLES2_ENV="/opt/conda/envs/retro-sniffles2"
+    BASE_ENV="/opt/conda/envs/retro-base"
+    export PATH="\${SNIFFLES2_ENV}/bin:\${BASE_ENV}/bin:\${PATH}"
+
+    \${SNIFFLES2_ENV}/bin/sniffles \
         --threads ${task.cpus} \
         --output-rnames \
         --sample-id ${sample_id} \
@@ -34,7 +38,7 @@ process SNIFFLES2 {
     gawk -v 'OFS=\t' \
     '{if (substr(\$0,1,1)=="#") {sub(/SUPPORT,/,"RE,",\$0);print} \
     else {sub(/SUPPORT=/,"RE=",\$8);print}}' | \
-    \${CONDA_PREFIX}/bin/python3 ${fixScript} | \
+     \${SNIFFLES2_ENV}/bin/python3 ${fixScript} | \
     bcftools sort -O z -o ${sample_id}.sniffles2.vcf.gz
 
     bcftools index ${sample_id}.sniffles2.vcf.gz

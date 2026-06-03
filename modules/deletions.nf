@@ -10,6 +10,9 @@ process SURVIVOR_INTRAPATIENT {
 
     script:
     """
+
+      export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
     surpyvor merge \
         --variants ${vcfs} \
         -d ${params.survivor_intra} \
@@ -30,11 +33,13 @@ process MOSDEPTH_DEL {
 
     script:
     """
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
+    /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/vcfToBedForMosdepth.py \
         --svtype DEL \
         ${vcf} ${sample_id}.del.bed
 
-    mosdepth \
+    /opt/conda/envs/retro-base/bin/mosdepth \
         -t ${task.cpus} \
         -Q 20 -n \
         -b ${sample_id}.del.bed \
@@ -57,7 +62,9 @@ process GENOTYPE_DEL {
 
     script:
     """
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/genotype.py \
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
+    /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/genotype.py \
         --svtype DEL \
         ${coverage} \
         ${vcf} \
@@ -74,27 +81,36 @@ process GENOTYPE_DEL {
 process SURVIVOR_INTERPATIENT {
     conda "${projectDir}/env.yaml"
     publishDir "${params.outdir}/variants/survivor", mode: 'copy'
+
     input:
     path vcfs
     path csis
+
     output:
     tuple path("${params.all_prefix}.merged.survivor.vcf.gz"), path("${params.all_prefix}.merged.survivor.vcf.gz.csi")
+
     script:
     """
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
     for vcf in \$(echo "${vcfs}" | tr ' ' '\n' | sort); do
         bcftools view -O v -o \${vcf%.gz} \$vcf
         echo \${vcf%.gz} >> survivor_list.txt
     done
+
     SURVIVOR merge survivor_list.txt \
         ${params.survivor_inter} 1 1 -1 -1 1 \
         ${params.all_prefix}.merged.survivor.vcf
+
     cat ${params.all_prefix}.merged.survivor.vcf | \
-        \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/fixVCF.py | \
+        /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/fixVCF.py | \
         bcftools sort -O z \
         -o ${params.all_prefix}.merged.survivor.vcf.gz
+
     bcftools index ${params.all_prefix}.merged.survivor.vcf.gz
     """
 }
+
 
 process GET_DELETIONS {
     conda "${projectDir}/env.yaml"
@@ -110,7 +126,9 @@ process GET_DELETIONS {
 
     script:
     """
-    \${CONDA_PREFIX}/bin/python3 ${projectDir}/bin/getMeDeletions.py \
+    export PATH="/opt/conda/envs/retro-base/bin:\${PATH}"
+
+    /opt/conda/envs/retro-base/bin/python3 ${projectDir}/bin/getMeDeletions.py \
         ${vcf} \
         ${bed} \
         ${params.all_prefix}.me.deletions.temp.vcf.gz
