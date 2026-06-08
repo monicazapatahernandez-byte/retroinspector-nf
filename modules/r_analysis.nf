@@ -19,13 +19,16 @@ process R_PREPARATORY {
 
     script:
     """
-    Rscript ${projectDir}/bin/analysisPreparatory.R \
-        ${rm_bed} \
-        ${del_vcf} \
-        ${params.min_read_support} \
-        ${params.all_prefix} \
-        ${sample_ids.join(' ')} \
-        ${gtf_file} \
+    R_ENV="/opt/conda/envs/retro-r"
+    export PATH="\${R_ENV}/bin:\${PATH}"
+
+    \${R_ENV}/bin/Rscript ${projectDir}/bin/analysisPreparatory.R \\
+        ${rm_bed} \\
+        ${del_vcf} \\
+        ${params.min_read_support} \\
+        ${params.all_prefix} \\
+        ${sample_ids.join(' ')} \\
+        ${gtf_file} \\
         ${genome}
     """
 }
@@ -52,11 +55,14 @@ process R_GENOTYPING {
 
     script:
     """
-    Rscript ${projectDir}/bin/analysisGenotyping.R \
-        ${insertions_table} \
-        ${annotated_insertions} \
-        ${params.all_prefix} \
-        ${me_deletions} \
+    R_ENV="/opt/conda/envs/retro-r"
+    export PATH="\${R_ENV}/bin:\${PATH}"
+
+    \${R_ENV}/bin/Rscript ${projectDir}/bin/analysisGenotyping.R \\
+        ${insertions_table} \\
+        ${annotated_insertions} \\
+        ${params.all_prefix} \\
+        ${me_deletions} \\
         ${sample_ids.join(' ')}
     """
 }
@@ -78,8 +84,11 @@ process R_ENRICHMENT {
 
     script:
     """
-    Rscript ${projectDir}/bin/enrichment.R \
-        ${genes} \
+    R_ENV="/opt/conda/envs/retro-r"
+    export PATH="\${R_ENV}/bin:\${PATH}"
+
+    \${R_ENV}/bin/Rscript ${projectDir}/bin/enrichment.R \\
+        ${genes} \\
         ${params.enrichment_pval}
     """
 }
@@ -108,8 +117,11 @@ process R_REPORT {
     script:
     def report_rmd = params.genome == "t2t" ? "report_t2t" : "report"
     """
+    R_ENV="/opt/conda/envs/retro-r"
+    export PATH="\${R_ENV}/bin:\${PATH}"
+
     WD=\$(pwd)
-    Rscript -e "rmarkdown::render('${projectDir}/bin/${report_rmd}.Rmd',
+    \${R_ENV}/bin/Rscript -e "rmarkdown::render('${projectDir}/bin/${report_rmd}.Rmd',
         output_file='report.${params.all_prefix}.html',
         output_dir=getwd(),
         params=list(
@@ -145,8 +157,11 @@ process R_COMPARE {
 
     script:
     """
+    R_ENV="/opt/conda/envs/retro-r"
+    export PATH="\${R_ENV}/bin:\${PATH}"
+
     WD=\$(pwd)
-    Rscript -e "rmarkdown::render('${projectDir}/bin/comparison.Rmd',
+    \${R_ENV}/bin/Rscript -e "rmarkdown::render('${projectDir}/bin/comparison.Rmd',
         output_file='${sample1}_vs_${sample2}.html',
         output_dir=getwd(),
         params=list(
@@ -180,20 +195,23 @@ process GENERATE_VCF {
 
     script:
     """
-    cat ${header} ${insertions_body} | \
-        bcftools sort -O z -o ${params.all_prefix}.te.vcf.gz
-    bcftools index ${params.all_prefix}.te.vcf.gz
+    BASE_ENV="/opt/conda/envs/retro-base"
+    export PATH="\${BASE_ENV}/bin:\${PATH}"
 
-    cat ${header} ${insertions_body_lax} | \
-        bcftools sort -O z -o ${params.all_prefix}.te.lax.vcf.gz
-    bcftools index ${params.all_prefix}.te.lax.vcf.gz
+    cat ${header} ${insertions_body} | \\
+        \${BASE_ENV}/bin/bcftools sort -O z -o ${params.all_prefix}.te.vcf.gz
+    \${BASE_ENV}/bin/bcftools index ${params.all_prefix}.te.vcf.gz
 
-    cat ${header} ${deletions_body} | \
-        bcftools sort -O z -o ${params.all_prefix}.te.deletions.vcf.gz
-    bcftools index ${params.all_prefix}.te.deletions.vcf.gz
+    cat ${header} ${insertions_body_lax} | \\
+        \${BASE_ENV}/bin/bcftools sort -O z -o ${params.all_prefix}.te.lax.vcf.gz
+    \${BASE_ENV}/bin/bcftools index ${params.all_prefix}.te.lax.vcf.gz
 
-    cat ${header} ${deletions_body_lax} | \
-        bcftools sort -O z -o ${params.all_prefix}.te.deletions.lax.vcf.gz
-    bcftools index ${params.all_prefix}.te.deletions.lax.vcf.gz
+    cat ${header} ${deletions_body} | \\
+        \${BASE_ENV}/bin/bcftools sort -O z -o ${params.all_prefix}.te.deletions.vcf.gz
+    \${BASE_ENV}/bin/bcftools index ${params.all_prefix}.te.deletions.vcf.gz
+
+    cat ${header} ${deletions_body_lax} | \\
+        \${BASE_ENV}/bin/bcftools sort -O z -o ${params.all_prefix}.te.deletions.lax.vcf.gz
+    \${BASE_ENV}/bin/bcftools index ${params.all_prefix}.te.deletions.lax.vcf.gz
     """
 }
