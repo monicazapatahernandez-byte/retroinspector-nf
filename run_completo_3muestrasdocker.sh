@@ -100,16 +100,16 @@ procesar_muestra NA19240
 procesar_muestra HG00733
 
 echo ""
-echo "=== Lanzando Nextflow con 2 muestras (T2T): $(date) ==="
+echo "=== Lanzando Nextflow con 3 muestras: $(date) ==="
 cd "$PIPE_DIR"
 /home/alumno27/miniconda3/envs/nf-core/bin/nextflow run main.nf \
     --input test_data/samplesheet.csv \
-    --genome t2t \
+    --genome hg38 \
     --mode full \
-    --outdir results_docker \
+    --outdir results_dockerhg38 \
     -profile dayhoff,docker \
-    -work-dir work_docker   \
-    -with-dag reports/dag_t2t.html \
+    -work-dir work_dockerhg38   \
+    -with-dag reports/dag_t2thg38.html \
     -resume
 
 echo "=== FIN: $(date) ==="
