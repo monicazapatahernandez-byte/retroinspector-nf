@@ -156,22 +156,24 @@ process GET_DFAM_PARTITION7 {
     storeDir "${params.outdir}/dfam"
 
     output:
-    path "dfam40*.h5"
+    path "dfam39_full*.h5"
 
     script:
+    // Dfam 3.9 stores families partitioned by taxonomy. Partition 0 (root)
+    // holds the taxonomy backbone and is mandatory for any famdb.py lookup.
+    // Partition 7 contains Mammalia, which is where Homo sapiens resides.
+    // Both are required for RepeatMasker to annotate human retrotransposons.
+    // Format is FamDB 2.x — compatible with the famdb.py bundled in
+    // RepeatMasker 4.1.9. Dfam 4.0 / FamDB 3.0 would require a separate
+    // FamDB standalone package and a rebuilt image.
     """
-    wget https://www.dfam.org/releases/current/families/FamDB/dfam40.0.h5.gz
+    wget https://www.dfam.org/releases/Dfam_3.9/families/FamDB/dfam39_full.0.h5.gz
+    wget https://www.dfam.org/releases/Dfam_3.9/families/FamDB/dfam39_full.7.h5.gz
 
-    wget https://www.dfam.org/releases/current/families/FamDB/dfam40.curated.hmm.0.h5.gz
+    gzip -t dfam39_full.0.h5.gz
+    gzip -t dfam39_full.7.h5.gz
 
-    wget https://www.dfam.org/releases/current/families/FamDB/dfam40.curated.hmm.1.h5.gz
-
-    gzip -t dfam40.0.h5.gz
-    gzip -t dfam40.curated.hmm.0.h5.gz
-    gzip -t dfam40.curated.hmm.1.h5.gz
-
-    gunzip -f dfam40.0.h5.gz
-    gunzip -f dfam40.curated.hmm.0.h5.gz
-    gunzip -f dfam40.curated.hmm.1.h5.gz
+    gunzip -f dfam39_full.0.h5.gz
+    gunzip -f dfam39_full.7.h5.gz
     """
 }
