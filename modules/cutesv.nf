@@ -31,7 +31,7 @@ process CUTESV {
         ${bam} ${reference} \
         ${sample_id}.cutesv.withseq.vcf tmp_cutesv
 
-    # Filtrar solo INS y BND, luego por read support
+    # Filter INS y BND, then read support
     cat ${sample_id}.cutesv.withseq.vcf | \
     gawk -v 'OFS=\t' \
     '{if (substr(\$0,1,1)=="#") {print} \
