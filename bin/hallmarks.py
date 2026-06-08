@@ -5,22 +5,21 @@ import csv
 import pysam
 from rapidfuzz import fuzz
 
-# === Constantes===
-POLYA_MIN_LEN  = 4      # longitud mínima de cola polyA
-POLYA_MAX_GAP  = 2      # hueco máximo entre tramos para fusionarlos
-POLYA_MIN_GAP  = 3      # separación mínima entre candidatos tras fusión
-POLYA_TAIL_PCT = 0.10   # la cola debe estar en el último/primer 10% de la secuencia
+# Constants
+POLYA_MIN_LEN  = 4      # min polyA tail length
+POLYA_MAX_GAP  = 2      # max gap between runs to merge
+POLYA_MIN_GAP  = 3      # min separation between candidates after merge
+POLYA_TAIL_PCT = 0.10   # tail must be within last/first 10% of the sequence
 L1_MOTIF       = "TTTTTAA"
-L1_MOTIF_RC    = "TTAAAAA"  # complemento reverso
-L1_FLANK       = 20     # bp a cada lado de la inserción
-L1_MIN_RATIO   = 60     # similitud mínima RapidFuzz (%)
+L1_MOTIF_RC    = "TTAAAAA"  # reverse complement
+L1_FLANK       = 20     # bp flanking the insertion site
+L1_MIN_RATIO   = 60     # min RapidFuzz similarity (%)
 
 
 def find_polya(sequence):
-#Detecta cola polyA o polyT en la secuencia insertada.
-#Devuelve True si:
-   #Hay un tramo de A o T de >= POLYA_MIN_LEN bp
-   #Ese tramo empieza dentro del último o primer POLYA_TAIL_PCT de la secuencia
+    # Detect polyA or polyT tail in the inserted sequence.
+    # Returns True if a run of A or T >= POLYA_MIN_LEN bp
+    # starts within the last or first POLYA_TAIL_PCT of the sequence.
 
     seq = sequence.upper()
     n   = len(seq)
@@ -30,7 +29,7 @@ def find_polya(sequence):
     tail_len = max(1, int(n * POLYA_TAIL_PCT))
 
     for base in ("A", "T"):
-        # Encontrar todos los tramos contiguos de la base
+        # Find all contiguous runs of the base
         candidates = []
         i = 0
         while i < n:
@@ -43,7 +42,7 @@ def find_polya(sequence):
             else:
                 i += 1
 
-        # Fusionar candidatos separados por <= POLYA_MAX_GAP bases
+        # Merge runs separated by <= POLYA_MAX_GAP bases
         merged = []
         for start, end in candidates:
             if merged and (start - merged[-1][1]) <= POLYA_MAX_GAP:
@@ -51,7 +50,7 @@ def find_polya(sequence):
             else:
                 merged.append((start, end))
 
-        # Segunda pasada: asegurar separación mínima de POLYA_MIN_GAP
+        # Second pass: enforce minimum gap between candidates
         final = []
         for idx, (start, end) in enumerate(merged):
             if idx == 0:
@@ -66,13 +65,13 @@ def find_polya(sequence):
         if not final:
             continue
 
-        # Cola al final de la secuencia (strand +)
+        # Tail at the end of the sequence (+ strand)
         best_end   = max(final, key=lambda x: x[1])
         length_end = best_end[1] - best_end[0]
         if length_end >= POLYA_MIN_LEN and best_end[0] >= (n - tail_len):
             return True
 
-        # Cola al inicio de la secuencia (strand -)
+        # Tail at the start of the sequence (- strand)
         best_start   = min(final, key=lambda x: x[0])
         length_start = best_start[1] - best_start[0]
         if length_start >= POLYA_MIN_LEN and best_start[1] <= tail_len:
@@ -82,18 +81,17 @@ def find_polya(sequence):
 
 
 def find_l1_motif(fasta, chrom, pos):
-#Busca el motivo consenso de la endonucleasa de L1 (TTTTTAA o RC TTAAAAA)
-#en los +/- L1_FLANK bp alrededor de la posición de inserción.
-#Usa búsqueda fuzzy con RapidFuzz al L1_MIN_RATIO% de similitud.
-#Devuelve True si se encuentra al menos una coincidencia.
-    
+    # Search for the L1 endonuclease consensus motif (TTTTTAA / RC TTAAAAA)
+    # in +/- L1_FLANK bp around the insertion site.
+    # Uses fuzzy matching via RapidFuzz at L1_MIN_RATIO% similarity.
+    # Returns True if at least one match is found.
+
     start = max(0, pos - L1_FLANK)
     end   = pos + L1_FLANK
 
     try:
         region = fasta.fetch(chrom, start, end).upper()
     except (ValueError, KeyError):
-        # Cromosoma no encontrado o posición fuera de rango
         return False
 
     if not region:
@@ -113,17 +111,17 @@ def find_l1_motif(fasta, chrom, pos):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Detección de hallmarks de retrotransposición: cola polyA y motivo L1 endonucleasa"
+        description="Detect TPRT retrotransposition hallmarks: polyA tail and L1 endonuclease motif"
     )
-    parser.add_argument("--input",     required=True, help="TSV con columnas: seqId, seqnames, start, vcf_alt")
-    parser.add_argument("--reference", required=True, help="FASTA de referencia indexado (hg38 o T2T)")
-    parser.add_argument("--output",    required=True, help="TSV de salida: seqId, has_polya, has_l1_motif")
+    parser.add_argument("--input",     required=True, help="TSV with columns: seqId, seqnames, start, vcf_alt")
+    parser.add_argument("--reference", required=True, help="Indexed reference FASTA (hg38 or T2T)")
+    parser.add_argument("--output",    required=True, help="Output TSV: seqId, has_polya, has_l1_motif")
     args = parser.parse_args()
 
-    print("Abriendo referencia...")
+    print("Loading reference...", flush=True)
     fasta = pysam.FastaFile(args.reference)
 
-    print("Procesando inserciones...")
+    print("Processing insertions...", flush=True)
     results = []
 
     with open(args.input, newline="") as fh:
@@ -145,7 +143,7 @@ def main():
 
     fasta.close()
 
-    print(f"Escribiendo resultados ({len(results)} inserciones)...")
+    print(f"Done, {len(results)} insertions processed", flush=True)
     with open(args.output, "w", newline="") as fh:
         writer = csv.DictWriter(
             fh,
@@ -154,7 +152,6 @@ def main():
         )
         writer.writeheader()
         writer.writerows(results)
-
 
 
 if __name__ == "__main__":
