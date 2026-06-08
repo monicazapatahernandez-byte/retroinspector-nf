@@ -1,32 +1,59 @@
-results_3muestras/
-work_3muestras/
+# ─── Nextflow runtime ─────────────────────────────────────────
+work/
+work_*/
+results/
+results_*/
+reports/
+.nextflow/
+.nextflow.log*
+trace*.txt
+report*.html
+timeline*.html
+dag*.html
+
+# ─── Logs and caches ──────────────────────────────────────────
+logs/
+.conda_envs/
+
+# ─── Backups and abandoned scripts ────────────────────────────
+*.bak
+env_FROZEN.yaml.bak
+r_FROZEN.yaml.bak
 bin/analysisPreparatory-no-va.R
 bin/mergesinsnakemake-variassecsolo.py
-run_completo_3muestras_sin_comprobacion_bam.shwork/ 
-results_test/ 
-results/ 
-.nextflow/ 
-.nextflow.log* 
-logs/ 
-*.bam 
-*.bai 
-*.fastq 
-*.fastq.gz 
-*.fa 
-*.fna 
-*.fasta 
-*.tar.gz 
+run_completo_3muestras_sin_comprobacion_bam.sh
+
+# ─── Heavy data files (should never be committed) ─────────────
+*.bam
+*.bai
+*.fastq
+*.fastq.gz
+*.fa
+*.fna
+*.fasta
+*.tar.gz
 *.rds
 *.RDS
-results_HG00514/
 input_data/
 data/repeatsReferenceTE.bed.gz
 data/repeatsReferenceTE.bed.gz.csi
-work_t2t/
-results_3muestras_t2t/
-.conda_envs
-env_FROZEN.yaml.bak
-r_FROZEN.yaml.bak
-results_docker/
-work_docker/
 
+# ─── R ────────────────────────────────────────────────────────
+.Rhistory
+.RData
+.Rproj.user/
+*.Rout
+
+# ─── Python ───────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# ─── OS / Editors ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
