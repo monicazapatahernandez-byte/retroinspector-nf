@@ -25,6 +25,7 @@ Prepare a samplesheet CSV with one sample per row:
 sample_id,fastq
 HG00514,/path/HG00514.fastq.gz
 NA19240,/path/NA19240.fastq.gz
+HG00733,/home/alumno27/tfm/retroinspector-nf/input_data/HG00733.fastq.gz
 ```
 
 ---
