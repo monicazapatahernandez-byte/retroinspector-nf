@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// Importar módulos
+// Import modules
 include { MINIMAP2_ALIGN }           from './modules/minimap2'
 include { CUTESV }                   from './modules/cutesv'
 include { SNIFFLES2 }                from './modules/sniffles2'
@@ -28,7 +28,7 @@ include { R_PREPARATORY;
           GENERATE_VCF }            from './modules/r_analysis'
 include { HALLMARKS }                from './modules/hallmarks'
 
-// Mensaje de inicio
+// Init
 log.info """
     R E T R O I N S P E C T O R - N F
     ===================================
@@ -41,7 +41,7 @@ log.info """
 
 workflow {
 
-    // 1. Canal de muestras desde CSV o directorio
+    // Samples from CSV dir
     if (params.input) {
         ch_samples = Channel
             .fromPath(params.input)
@@ -92,7 +92,7 @@ workflow {
         ch_dfam_files     = Channel.value(file('NO_DFAM7'))
     }
 
-    // 2. Alineamiento
+    // 2. Aligment
     MINIMAP2_ALIGN(ch_samples, ch_reference)
     ch_bams = MINIMAP2_ALIGN.out  // (sample_id, bam, bai)
 
@@ -100,7 +100,7 @@ workflow {
     CUTESV(ch_bams, ch_reference)
     SNIFFLES2(ch_bams, ch_reference)
 
-    // 4. Reconstrucción de secuencias insertadas
+    // 4. Rebuilt secs
     ch_cutesv_input = ch_bams.join(CUTESV.out)
         .map { sid, bam, bai, vcf, csi -> tuple(sid, "cutesv", vcf, csi, bam, bai) }
     ch_sniffles2_input = ch_bams.join(SNIFFLES2.out)
@@ -108,7 +108,7 @@ workflow {
 
     ASSEMBLY_ALLELES(ch_cutesv_input.mix(ch_sniffles2_input))
 
-    // 5. Merge intra-paciente y genotyping de inserciones
+   //  5. Intrapatient and ins genotyping merge
     ch_polished = ASSEMBLY_ALLELES.out
         .groupTuple()
         .map { sid, callers, vcfs, csis -> tuple(sid, vcfs, csis) }
@@ -121,7 +121,7 @@ workflow {
     MOSDEPTH_INS(ch_for_geno_ins)
     GENOTYPE_INS(MOSDEPTH_INS.out)
 
-    // 6. Merge inter-paciente
+    // 6. Interpatient merge
     ch_all_vcfs = GENOTYPE_INS.out.map { sid, vcf, csi -> vcf }.collect()
     ch_all_csis = GENOTYPE_INS.out.map { sid, vcf, csi -> csi }.collect()
 
@@ -130,7 +130,7 @@ workflow {
     // 7. RepeatMasker
     REPEATMASKER(MERGE_INTERPATIENT.out, ch_rm_lib, ch_dfam_files)
 
-    // 8. Deleciones
+    // 8. Deletions
     ch_caller_vcfs = CUTESV.out.join(SNIFFLES2.out)
         .map { sid, vcf1, csi1, vcf2, csi2 -> tuple(sid, [vcf1, vcf2], [csi1, csi2]) }
 
@@ -149,7 +149,7 @@ workflow {
 
     GET_DELETIONS(SURVIVOR_INTERPATIENT.out, ch_repeats)
 
-    // 9. Análisis R (solo en modo full)
+    // 9.  R ( mode full)
     ch_sample_ids = ch_samples.map { sid, fastq -> sid }.collect()
     if (params.mode == "full") {
         R_PREPARATORY(REPEATMASKER.out, GET_DELETIONS.out, ch_sample_ids, ch_gtf, params.genome)
@@ -168,10 +168,12 @@ workflow {
             R_GENOTYPING.out[2],   // insertions_vcf_body_lax
             R_GENOTYPING.out[3],   // deletions_vcf_body
             R_GENOTYPING.out[4],   // deletions_vcf_body_lax
-            file("${projectDir}/data/header.txt")
+            params.genome == "t2t"
+                ? file("${projectDir}/data/header_t2t.txt")
+                : file("${projectDir}/data/header.txt")
         )
 
-        // 10. Hallmarks de retrotransposición
+        // 10. Hallmarks 
         HALLMARKS(
             R_GENOTYPING.out[6],  // hallmarks_input.tsv
             ch_reference
@@ -190,7 +192,7 @@ workflow {
             Channel.value([]),  // other_sets
             HALLMARKS.out
         )
-// Comparación entre pares de muestras
+// r_compare
 if (params.comparisons) {
     ch_comparisons = Channel.fromList(params.comparisons)
     R_COMPARE(
