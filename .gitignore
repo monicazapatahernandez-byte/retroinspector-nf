@@ -22,6 +22,7 @@ r_FROZEN.yaml.bak
 bin/analysisPreparatory-no-va.R
 bin/mergesinsnakemake-variassecsolo.py
 run_completo_3muestras_sin_comprobacion_bam.sh
+ run_completo_3muestrasdocker.sh
 
 # ─── Heavy data files (should never be committed) ─────────────
 *.bam
