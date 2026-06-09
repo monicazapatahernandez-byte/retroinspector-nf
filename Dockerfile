@@ -24,8 +24,5 @@ ENV PATH=/opt/conda/condabin:/opt/conda/bin:$PATH
 
 RUN chmod -R a+rx /opt/conda
 
-COPY activate-and-run.sh /usr/local/bin/activate-and-run.sh
-RUN chmod +x /usr/local/bin/activate-and-run.sh
-ENTRYPOINT ["/usr/local/bin/activate-and-run.sh"]
 
 WORKDIR /work
