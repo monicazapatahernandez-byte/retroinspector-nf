@@ -293,7 +293,6 @@ RetroInspector-NF introduces the following changes relative to the original Retr
 ### Containerization
 
 * Single versioned Docker image (`monicazh/retroinspector-nf:0.1.0`) bundling four isolated conda environments.
-* Per-process environment activation via explicit `PATH` export and absolute binary invocation, independent of the container `ENTRYPOINT`.
 * Docker run options configured for non-root user execution.
 
 ### Reference support
