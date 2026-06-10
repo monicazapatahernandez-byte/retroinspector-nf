@@ -34,7 +34,7 @@ HG00733,/path/HG00733.fastq.gz
 
 The pipeline supports two execution modes, selected via Nextflow profiles. The Docker profile is recommended; the Conda profile is kept as a fallback for environments where Docker is not available.
 
-### Docker (recommended)
+### Docker 
 
 The Docker image `monicazh/retroinspector-nf:0.1.0` ships all four isolated conda environments (`retro-base`, `retro-sniffles2`, `retro-rm-t2t`, `retro-r`) needed by the pipeline. See the [Container architecture](#container-architecture) section for details.
 
@@ -43,7 +43,7 @@ The Docker image `monicazh/retroinspector-nf:0.1.0` ships all four isolated cond
 nextflow run main.nf \
     --input samplesheet.csv \
     --genome hg38 \
-    --outdir results_docker \
+    --outdir results_dockerhg38 \
     -profile dayhoff,docker
 
 # T2T-CHM13v2.0 with automatic reference download
@@ -123,7 +123,7 @@ export PATH="${R_ENV}/bin:${PATH}"
 ${R_ENV}/bin/Rscript ${projectDir}/bin/analysisPreparatory.R ...
 ```
 
-This pattern is used because Nextflow overrides the container `ENTRYPOINT` with `/bin/bash` when launching processes, which bypasses any `activate-and-run.sh` wrapper embedded in the image. Activating the environment explicitly per process makes the pipeline independent of the container launch mechanism and reproducible on any Docker setup, with or without entrypoint customization.
+This pattern is used because the Dockerfile does not define a custom ENTRYPOINT. Therefore, each Nextflow process selects the required micromamba environment explicitly. Activating the environment per process makes the pipeline independent of container entrypoint behavior and reproducible on any Docker setup.
 
 ---
 
