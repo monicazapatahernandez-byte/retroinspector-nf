@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=retro_3muestras_t2t
-#SBATCH --output=logs/retro_3muestras_t2t_%j.log
-#SBATCH --error=logs/retro_3muestras_t2t_%j.err
+#SBATCH --job-name=retro_3muestras
+#SBATCH --output=logs/retro_3muestras_%j.log
+#SBATCH --error=logs/retro_3muestras_%j.err
 #SBATCH --time=24:00:00
 #SBATCH --partition=eck-q
 
@@ -29,7 +29,7 @@ procesar_muestra() {
     local SAMPLE=$1
     local TARFILE="${SAMPLE}.ONT.rebasecalled.fastq.tar.gz"
     local FASTQFILE="${SAMPLE}.fastq.gz"
-    local BAMFILE="${PIPE_DIR}/results_docker/alns/${SAMPLE}.bam"
+    local BAMFILE="${PIPE_DIR}/results_dockerhg38/alns/${SAMPLE}.bam"
 
     echo ""
     echo "=== [$SAMPLE] INICIO: $(date) ==="
@@ -109,7 +109,7 @@ cd "$PIPE_DIR"
     --outdir results_dockerhg38 \
     -profile dayhoff,docker \
     -work-dir work_dockerhg38   \
-    -with-dag reports/dag_t2thg38.html \
+    -with-dag reports/dag_hg38.html \
     -resume
 
 echo "=== FIN: $(date) ==="

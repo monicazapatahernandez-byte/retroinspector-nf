@@ -100,7 +100,7 @@ procesar_muestra NA19240
 procesar_muestra HG00733
 
 echo ""
-echo "=== Lanzando Nextflow con 2 muestras (T2T): $(date) ==="
+echo "=== Lanzando Nextflow (T2T): $(date) ==="
 cd "$PIPE_DIR"
 /home/alumno27/miniconda3/envs/nf-core/bin/nextflow run main.nf \
     --input test_data/samplesheet.csv \
