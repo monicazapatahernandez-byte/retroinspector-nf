@@ -28,6 +28,8 @@ include { R_PREPARATORY;
           GENERATE_VCF }            from './modules/r_analysis'
 include { HALLMARKS }                from './modules/hallmarks'
 
+workflow {
+
 // Init
 log.info """
     R E T R O I N S P E C T O R - N F
@@ -39,7 +41,6 @@ log.info """
     min_reads   : ${params.min_read_support}
     """.stripIndent()
 
-workflow {
 
     // Samples from CSV dir
     if (params.input) {
