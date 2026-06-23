@@ -7,7 +7,6 @@ reports/
 .nextflow/
 .nextflow.log*
 trace*.txt
-report*.html
 timeline*.html
 dag*.html
 
