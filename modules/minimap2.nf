@@ -9,6 +9,8 @@ process MINIMAP2_ALIGN {
     tuple val(sample_id), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
     script:
     """
+    export PATH="/opt/conda/envs/retro-base/bin:\$PATH"
+
     minimap2 \
         -x map-ont \
         -R "@RG\\tID:${sample_id}\\tSM:${sample_id}" \
